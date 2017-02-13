@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unitec", "Unitec\Unitec.csproj", "{BB02E774-00CE-463E-A991-79E63FF554D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unitec.ConsoleUI", "Unitec\Unitec.ConsoleUI.csproj", "{BB02E774-00CE-463E-A991-79E63FF554D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unitec.Middleware", "Unitec.Middleware\Unitec.Middleware.csproj", "{522547D9-9AB1-44BF-9786-068BF0334491}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unitec.Middleware.Test", "Unitec.Middleware.Test\Unitec.Middleware.Test.csproj", "{90CEBF5F-6E25-4D47-B8E8-88436B2EF87B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{BB02E774-00CE-463E-A991-79E63FF554D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB02E774-00CE-463E-A991-79E63FF554D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB02E774-00CE-463E-A991-79E63FF554D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{522547D9-9AB1-44BF-9786-068BF0334491}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{522547D9-9AB1-44BF-9786-068BF0334491}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{522547D9-9AB1-44BF-9786-068BF0334491}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{522547D9-9AB1-44BF-9786-068BF0334491}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90CEBF5F-6E25-4D47-B8E8-88436B2EF87B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90CEBF5F-6E25-4D47-B8E8-88436B2EF87B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90CEBF5F-6E25-4D47-B8E8-88436B2EF87B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90CEBF5F-6E25-4D47-B8E8-88436B2EF87B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

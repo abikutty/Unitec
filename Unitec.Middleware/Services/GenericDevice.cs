@@ -77,10 +77,26 @@ namespace Unitec.Middleware.Services
         abstract public bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report);
         abstract public bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo);
         abstract public bool TerminateDevice();
+
+        protected virtual void HandleException(Exception ex, DeviceErrors error)
+        {
+            if (ex != null)
+            {
+                var errorArg = ex.Create(error);
+                OnDeviceErrorOccurred(errorArg);
+
+            }
+        }
+
+
+        protected virtual void WriteLog(Exception ex)
+        {
+
+        }
         #endregion
 
         #region Events
- 
+
         public event EventHandler DeviceConnected;
         public event EventHandler DeviceDisconnected;
         public event DeviceErrorEventHandler DeviceErrorOccurred;

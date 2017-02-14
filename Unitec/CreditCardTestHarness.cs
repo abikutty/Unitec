@@ -73,5 +73,25 @@ namespace Unitec
             var res = cardReader.ResetHardware();
             txtResult.Text = res.ToString();
         }
+
+        private void btnCardData_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnCardFailure_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnInsertTimeout_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnCardInserted_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

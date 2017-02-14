@@ -81,8 +81,6 @@ namespace Unitec.Middleware
 
         public override bool ConnectToDevice()
         {
-            var error = DeviceErrors.UnexpectedError;
-            Exception exception = null;
             try
             {
                 if (!creditcardPort.IsOpen)
@@ -93,58 +91,29 @@ namespace Unitec.Middleware
                 }
                 return true;
             }
-            catch (UnauthorizedAccessException e)
-            {
-                error = DeviceErrors.PortAccessDenied;
-                exception = e;
-            }
-            catch (ArgumentOutOfRangeException e)
-            {
-                error = DeviceErrors.PortAccessDenied;
-                exception = e;
-            }
-            catch (ArgumentException e)
-            {
-                error = DeviceErrors.PortAccessDenied;
-                exception = e;
-            }
-            catch (IOException e)
-            {
-                exception = e;
-                error = DeviceErrors.PortAccessDenied;
-            }
-            catch (InvalidOperationException e)
-            {
-                exception = e;
-                error = DeviceErrors.PortAccessDenied;
-            }
             catch (Exception e)
             {
-                exception = e;
-                error = DeviceErrors.UnexpectedError;
-            }
-            finally
-            {
-                if (exception != null)
-                {
-                    var errorArg = exception.Create(error);
-                    OnDeviceErrorOccurred(errorArg);
-
-                }
-
+                HandleException(e, DeviceErrors.ConnectionFailed);
             }
             return false;
         }
 
         public override bool DisableDevice()
         {
-            throw new NotImplementedException();
+            try
+            {
+                creditcardPort.DtrEnable = false;
+                return true;
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrors.UnableToClosePort);
+            }
+            return false;
         }
 
         public override bool DisconnectFromDevice()
         {
-            var error = DeviceErrors.UnexpectedError;
-            Exception exception = null;
             try
             {
                 if (creditcardPort.IsOpen)
@@ -153,32 +122,25 @@ namespace Unitec.Middleware
                 }
                 return true;
             }
-            catch (IOException e)
-            {
-                exception = e;
-                error = DeviceErrors.UnableToClosePort;
-            }
             catch (Exception e)
             {
-                exception = e;
-                error = DeviceErrors.UnableToClosePort;
-            }
-            finally
-            {
-                if (exception != null)
-                {
-                    var errorArg = exception.Create(error);
-                    OnDeviceErrorOccurred(errorArg);
-
-                }
-
+                HandleException(e, DeviceErrors.UnableToClosePort);
             }
             return false;
         }
 
         public override bool EnableDevice()
         {
-            throw new NotImplementedException();
+            try
+            {
+                creditcardPort.DtrEnable = true;
+                return true;
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrors.NotEnabled);
+            }
+            return false;
         }
 
         public override bool InitializeDevice()
@@ -197,18 +159,14 @@ namespace Unitec.Middleware
             }
             catch (Exception ex)
             {
-                var error = ex.Create(DeviceErrors.DeviceInitFailed);
-                OnDeviceErrorOccurred(error);
+                HandleException(ex, DeviceErrors.DeviceInitFailed);
                 return false;
             }
 
         }
-
-
+        
         public override bool ResetHardware()
         {
-            var error = DeviceErrors.UnexpectedError;
-            Exception exception = null;
             try
             {
                 if (creditcardPort != null)
@@ -226,32 +184,29 @@ namespace Unitec.Middleware
                     return DisconnectFromDevice();
                 }
             }
-            catch (IOException e)
+            catch (Exception ex)
             {
-                exception = e;
-                error = DeviceErrors.UnableToClosePort;
-            }
-            catch (Exception e)
-            {
-                exception = e;
-                error = DeviceErrors.UnableToClosePort;
-            }
-            finally
-            {
-                if (exception != null)
-                {
-                    var errorArg = exception.Create(error);
-                    OnDeviceErrorOccurred(errorArg);
-
-                }
-
+                HandleException(ex, DeviceErrors.UnableToClosePort);
+                return false;
             }
             return false;
         }
 
         public override bool TerminateDevice()
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (creditcardPort.IsOpen)
+                {
+                    creditcardPort.Close();
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrors.UnableToClosePort);
+            }
+            return false;
         }
 
         public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)

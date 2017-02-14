@@ -12,13 +12,13 @@ namespace Unitec.Middleware.Contracts
         #region Properties
         string LogFile { get; set; }
         string PeripheralsConfigFile { get; set; }
-        bool IsConnected { get; set; }
-        bool IsEnabled { get; set; }
-        string FirmwareVersion { get; set; }
+        bool IsConnected { get;  }
+        bool IsEnabled { get; }
+        string FirmwareVersion { get; }
         #endregion
 
         #region Events
-        event EventHandler DeviceErrorOccurred;
+        event DeviceErrorEventHandler DeviceErrorOccurred;
         event EventHandler DeviceConnected;
         event EventHandler DeviceDisconnected;
         #endregion

@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts\CreditCardDeviceEvents.cs" />
+    <Compile Include="Contracts\GenericDeviceEvents.cs" />
     <Compile Include="Contracts\ICredirCardReader.cs" />
     <Compile Include="Contracts\IGenericDevice.cs" />
     <Compile Include="Services\CreditCardReader.cs" />

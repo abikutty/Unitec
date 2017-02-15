@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,10 +15,13 @@ namespace Unitec
     public partial class CreditCardTestHarness : Form
     {
         private CreditCardReader cardReader;
+        delegate void StringArgReturningVoidDelegate(string text);
         public CreditCardTestHarness()
         {
             InitializeComponent();
             cardReader = new CreditCardReader();
+            txtLogFilePath.Text = "C:\\Unitec\\Log\\Unitec.Middleware.log";
+            txtConfigFilePath.Text = "C:\\Unitec\\Config\\CreditCardReader.config";
         }
 
         private void CreditCardReader_Load(object sender, EventArgs e)
@@ -48,8 +52,31 @@ namespace Unitec
             cardReader.LogFile = txtLogFilePath.Text;
             var res = cardReader.InitializeDevice();
             txtResult.Text = res.ToString();
+            Program.CreateFileWatcher(cardReader.LogFile, OnLogUpdated);
         }
 
+        private void SetText(string text)
+        {
+            // InvokeRequired required compares the thread ID of the  
+            // calling thread to the thread ID of the creating thread.  
+            // If these threads are different, it returns true.  
+            if (this.txtLog.InvokeRequired)
+            {
+                StringArgReturningVoidDelegate d = new StringArgReturningVoidDelegate(SetText);
+                this.Invoke(d, new object[] { text });
+            }
+            else
+            {
+                this.txtLog.AppendText(text);
+            }
+        }
+
+
+        private void OnLogUpdated(object obj, FileSystemEventArgs args)
+        {
+            var line = File.ReadLines(args.FullPath).LastOrDefault();
+            SetText(line + "\r\n");
+        }
         private void btnConnect_Click(object sender, EventArgs e)
         {
             var res = cardReader.ConnectToDevice();
@@ -81,7 +108,7 @@ namespace Unitec
 
         private void btnCardFailure_Click(object sender, EventArgs e)
         {
-
+            cardReader.CardReadFailure
         }
 
         private void btnInsertTimeout_Click(object sender, EventArgs e)

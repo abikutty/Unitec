@@ -30,6 +30,7 @@ namespace Unitec.Middleware
             CardDataObtainedEventHandler handler = CardDataObtained;
             if (handler != null)
             {
+                "credit card data obtained".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -38,6 +39,7 @@ namespace Unitec.Middleware
             EventHandler handler = CardInserted;
             if (handler != null)
             {
+                "credit card inserted".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -46,6 +48,7 @@ namespace Unitec.Middleware
             EventHandler handler = CardInsertTimeout;
             if (handler != null)
             {
+                "credit card insert timeout".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -54,6 +57,7 @@ namespace Unitec.Middleware
             DeviceErrorEventHandler handler = CardReadFailure;
             if (handler != null)
             {
+                "credit card read failed".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -83,12 +87,14 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Connect Device...".Log(LogFile);
                 if (!creditcardPort.IsOpen)
                 {
                     creditcardPort.Open();
                     creditcardPort.DataReceived += HandleSerialDataReceived;
                     creditcardPort.ErrorReceived += HandleErrorReceived;
                 }
+                "Successfully Connected to Device...".Log(LogFile);
                 return true;
             }
             catch (Exception e)
@@ -102,7 +108,9 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Disable Device...".Log(LogFile);
                 creditcardPort.DtrEnable = false;
+                "Successfully Disabled the Device...".Log(LogFile);
                 return true;
             }
             catch (Exception e)
@@ -116,10 +124,12 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Disconnect Device...".Log(LogFile);
                 if (creditcardPort.IsOpen)
                 {
                     creditcardPort.Close();
                 }
+                "Successfully Disconnected the Device...".Log(LogFile);
                 return true;
             }
             catch (Exception e)
@@ -133,7 +143,9 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Enable Device...".Log(LogFile);
                 creditcardPort.DtrEnable = true;
+                "Successfully Enabled the Device...".Log(LogFile);
                 return true;
             }
             catch (Exception e)
@@ -147,6 +159,7 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Initialize Device...".Log(LogFile);
                 if (String.IsNullOrEmpty(PeripheralsConfigFile) || File.Exists(PeripheralsConfigFile))
                 {
                     throw new FileNotFoundException("Config file missing.", PeripheralsConfigFile);
@@ -155,6 +168,7 @@ namespace Unitec.Middleware
 
                 creditcardPort = new SerialPort(conn.ComPort, conn.BaudRate,
                                                  conn.Parity, conn.DataBits, conn.StopBits);
+                "Successfully Initialized the Device...".Log(LogFile);
                 return true;
             }
             catch (Exception ex)
@@ -169,6 +183,7 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Reset Device...".Log(LogFile);
                 if (creditcardPort != null)
                 {
                     creditcardPort.Write(Resethardware, 0, Resethardware.Count());
@@ -178,6 +193,7 @@ namespace Unitec.Middleware
                         creditcardPort.Read(message, 0, message.Count());
                         if (message[3] == 0x90 && message[4] == 0x00)
                         {
+                            "Successfully Reset the Device...".Log(LogFile);
                             return true;
                         }
                     }
@@ -196,10 +212,12 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Close the Device...".Log(LogFile);
                 if (creditcardPort.IsOpen)
                 {
                     creditcardPort.Close();
                 }
+                "Successfully Closed the Device...".Log(LogFile);
                 return true;
             }
             catch (Exception e)
@@ -237,7 +255,7 @@ namespace Unitec.Middleware
         protected void HandleErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
             var ex = new Exception(String.Format("Internal Error Code {0}", e.EventType));
-            var eventArgs = ex.Create(DeviceErrors.ErrorReceving);
+            var eventArgs = ex.Create(DeviceErrors.ErrorReceving,LogFile);
             OnDeviceErrorOccurred(eventArgs);
             errorReceived.Set();
         }

@@ -98,7 +98,7 @@
             this.txtResult.Name = "txtResult";
             this.txtResult.Size = new System.Drawing.Size(231, 77);
             this.txtResult.TabIndex = 13;
-               // 
+            // 
             // txtLog
             // 
             this.txtLog.Location = new System.Drawing.Point(87, 267);

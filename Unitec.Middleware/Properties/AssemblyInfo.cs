@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Unitec.Middleware")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Baltimore County Government")]
+[assembly: AssemblyCompany("John Edward")]
 [assembly: AssemblyProduct("Unitec.Middleware")]
-[assembly: AssemblyCopyright("Copyright © Baltimore County Government 2017")]
+[assembly: AssemblyCopyright("Copyright © John Edward 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

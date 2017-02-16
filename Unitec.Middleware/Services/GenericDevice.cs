@@ -87,7 +87,7 @@ namespace Unitec.Middleware.Services
         {
             if (ex != null)
             {
-                var errorArg = ex.Create(error);
+                var errorArg = ex.Create(error,LogFile);
                 OnDeviceErrorOccurred(errorArg);
 
             }
@@ -96,7 +96,7 @@ namespace Unitec.Middleware.Services
 
         protected virtual void WriteLog(Exception ex)
         {
-
+            ex.Log(LogFile);
         }
         #endregion
 
@@ -111,6 +111,7 @@ namespace Unitec.Middleware.Services
             DeviceErrorEventHandler handler = DeviceErrorOccurred;
             if (handler != null)
             {
+                "device error occured".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -122,6 +123,7 @@ namespace Unitec.Middleware.Services
             EventHandler handler = DeviceConnected;
             if (handler != null)
             {
+                "device connected".Log(LogFile);
                 handler(this, e);
             }
         }
@@ -133,6 +135,7 @@ namespace Unitec.Middleware.Services
             EventHandler handler = DeviceDisconnected;
             if (handler != null)
             {
+                "device disconnected".Log(LogFile);
                 handler(this, e);
             }
         }

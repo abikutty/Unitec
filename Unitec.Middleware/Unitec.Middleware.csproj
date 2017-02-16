@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts\GenericDeviceHelper.cs" />
     <Compile Include="Contracts\CreditCardDeviceHelper.cs" />
     <Compile Include="Contracts\GenericDeviceEvents.cs" />
     <Compile Include="Contracts\ICredirCardReader.cs" />

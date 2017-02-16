@@ -99,7 +99,7 @@ namespace Unitec.Middleware
             }
             catch (Exception e)
             {
-                HandleException(e, DeviceErrors.ConnectionFailed);
+                HandleException(e, DeviceErrorType.ConnectionFailed);
             }
             return false;
         }
@@ -115,7 +115,7 @@ namespace Unitec.Middleware
             }
             catch (Exception e)
             {
-                HandleException(e, DeviceErrors.UnableToClosePort);
+                HandleException(e, DeviceErrorType.UnableToClosePort);
             }
             return false;
         }
@@ -134,7 +134,7 @@ namespace Unitec.Middleware
             }
             catch (Exception e)
             {
-                HandleException(e, DeviceErrors.UnableToClosePort);
+                HandleException(e, DeviceErrorType.UnableToClosePort);
             }
             return false;
         }
@@ -150,7 +150,7 @@ namespace Unitec.Middleware
             }
             catch (Exception e)
             {
-                HandleException(e, DeviceErrors.NotEnabled);
+                HandleException(e, DeviceErrorType.NotEnabled);
             }
             return false;
         }
@@ -173,7 +173,7 @@ namespace Unitec.Middleware
             }
             catch (Exception ex)
             {
-                HandleException(ex, DeviceErrors.DeviceInitFailed);
+                HandleException(ex, DeviceErrorType.DeviceInitFailed);
                 return false;
             }
 
@@ -202,7 +202,7 @@ namespace Unitec.Middleware
             }
             catch (Exception ex)
             {
-                HandleException(ex, DeviceErrors.UnableToClosePort);
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
                 return false;
             }
             return false;
@@ -222,7 +222,7 @@ namespace Unitec.Middleware
             }
             catch (Exception e)
             {
-                HandleException(e, DeviceErrors.UnableToClosePort);
+                HandleException(e, DeviceErrorType.UnableToClosePort);
             }
             return false;
         }
@@ -255,7 +255,7 @@ namespace Unitec.Middleware
         protected void HandleErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
             var ex = new Exception(String.Format("Internal Error Code {0}", e.EventType));
-            var eventArgs = ex.Create(DeviceErrors.ErrorReceving,LogFile);
+            var eventArgs = ex.Create(DeviceErrorType.ErrorReceving,LogFile);
             OnDeviceErrorOccurred(eventArgs);
             errorReceived.Set();
         }

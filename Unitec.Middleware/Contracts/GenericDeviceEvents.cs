@@ -18,7 +18,14 @@ namespace Unitec.Middleware.Contracts
         Disconnected
     }
 
-    public enum DeviceErrors
+    public class DeviceError
+        {
+        public int Code { get; set; }
+        public string Description { get; set; }
+    }
+
+
+    public enum DeviceErrorType
     {
         [Description("Unexpected Error")]
         UnexpectedError = 0,
@@ -71,15 +78,14 @@ namespace Unitec.Middleware.Contracts
 
     public class DeviceErrorEventArgs : EventArgs
     {
-        public int Code { get; set; }
-        public string Description { get; set; }
+      public List<DeviceError> DeviceErrors { get; set; }
     }
 
     public static class GenericDeviceHelper
     {
-        public static string GetDescription(this DeviceErrors error)
+        public static string GetDescription(this DeviceErrorType error)
         {
-            var type = typeof(DeviceErrors);
+            var type = typeof(DeviceErrorType);
             var field = type.GetField(error.ToString());
 
             var attribute = (DescriptionAttribute) Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute));

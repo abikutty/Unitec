@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -9,37 +10,34 @@ using Unitec.Middleware.Contracts;
 
 namespace Unitec.Middleware.Services
 {
-    public class PeripheralConnection
-    {
-        public string  ComPort { get; private set; }
-        public int BaudRate { get; private set; }
-        public Parity Parity { get; private set; }
-        public int DataBits { get; private set; }
-        public StopBits StopBits { get; private set; }
 
-        private string peripheralsConfigFile = "";
-        public PeripheralConnection(string file )
-        {
-            peripheralsConfigFile = file;
-            //TODO:- Read Config file to populate the fields
-
-            var configFile = ConfigurationManager.OpenExeConfiguration(file);
-            var settings = configFile.AppSettings.Settings;
-
-            ComPort = "";
-            BaudRate = 38400;
-            Parity = Parity.None;
-            DataBits = 8;
-            StopBits = StopBits.One;
-        }
-    }
     public abstract class GenericDevice : IGenericDevice
     {
 
         #region Properties
         private DeviceStatus currentStatus;
         private string firmwareVersion;
-        public string LogFile { get; set; }
+        private string logFile;
+        public string LogFile
+        {
+            get
+            {
+                return logFile;
+            }
+             set
+            {
+                if(logFile != value)
+                {
+                    logFile = value;
+                    var dir = Path.GetDirectoryName(logFile);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    {
+                        Directory.CreateDirectory((dir));
+                    }
+                }
+            }
+        }
+
         public string PeripheralsConfigFile { get; set; }
         public bool IsConnected
         {
@@ -83,7 +81,7 @@ namespace Unitec.Middleware.Services
         abstract public bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo);
         abstract public bool TerminateDevice();
 
-        protected virtual void HandleException(Exception ex, DeviceErrors error)
+        protected virtual void HandleException(Exception ex, DeviceErrorType error)
         {
             if (ex != null)
             {

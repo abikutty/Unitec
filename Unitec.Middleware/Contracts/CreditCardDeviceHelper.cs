@@ -1,63 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Unitec.Middleware.Contracts
 {
-    public delegate void CardDataObtainedEventHandler(object sender, CardDataObtainedEventArgs e);
-
-    public class CardDataObtainedEventArgs : EventArgs
+    public class PeripheralConnection
     {
-        public string Track1Data { get; set; }
-        public string Track2Data { get; set; }
-        public string Track3Data { get; set; }
-    }
+        public string ComPort { get; private set; }
+        public int BaudRate { get; private set; }
+        public Parity Parity { get; private set; }
+        public int DataBits { get; private set; }
+        public StopBits StopBits { get; private set; }
 
-    public class CardReadFailureEventArgs : DeviceErrorEventArgs
-    {
-
-    }
-
-    public enum LogType
-    {
-        Error = 1,
-        Status = 2,
-        Warning = 3
-    }
-
-    public static class CreditCardDeviceHelper
-     {
-
-        
-         public static DeviceErrorEventArgs Create(this Exception e, DeviceErrors error, string logPath)
+        private string peripheralsConfigFile = "";
+        public PeripheralConnection(string file)
         {
-            var deviceEventArg = new DeviceErrorEventArgs();
-            deviceEventArg.Code = (int)error;
-            deviceEventArg.Description = String.Format("Error {0} - Underlying Exception {1}", error.GetDescription(), e.Message);
-            deviceEventArg.Description.Log(logPath, LogType.Error);
-            return deviceEventArg;
+            peripheralsConfigFile = file;
+            //TODO:- Read Config file to populate the fields
+
+            var configFile = ConfigurationManager.OpenExeConfiguration(file);
+            var settings = configFile.AppSettings.Settings;
+            ComPort = settings["ComPort"].Value ?? "COM3";
+            int temp = 0;
+            BaudRate = int.TryParse(settings["BaudRate"].Value, out temp) ? temp : 38400;
+            Parity = (Parity)(int.TryParse(settings["Parity"].Value, out temp) ? temp : 0);
+            DataBits = int.TryParse(settings["DataBits"].Value, out temp) ? temp : 8;
+            StopBits = (StopBits)(int.TryParse(settings["StopBits"].Value, out temp) ? temp : 1);
         }
-
-        public static void Log(this Exception e, string filePath)
-        {
-            var exDetails = String.Format("Exceptin {0} at Trace {1}", e.Message, e.StackTrace);
-            exDetails.Log(filePath,LogType.Error);
-        }
-
-
-        public static void Log(this string logMessage, string filePath, LogType logType = LogType.Status)
-        {
-            using (StreamWriter w = File.AppendText(filePath))
-            {
-                w.Write("\r\nLog Entry : ");
-                w.WriteLine("{0} {1} : {2}:{3}", DateTime.Now.ToLongTimeString(),    DateTime.Now.ToLongDateString(), logType.ToString(), logMessage);
-            }
-        }
-
     }
-
 
 }

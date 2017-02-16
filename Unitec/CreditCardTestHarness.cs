@@ -55,18 +55,19 @@ namespace Unitec
             Program.CreateFileWatcher(cardReader.LogFile, OnLogUpdated);
         }
 
-        private void SetText(string text)
+        private void SetLogText(string text)
         {
             // InvokeRequired required compares the thread ID of the  
             // calling thread to the thread ID of the creating thread.  
             // If these threads are different, it returns true.  
             if (this.txtLog.InvokeRequired)
             {
-                StringArgReturningVoidDelegate d = new StringArgReturningVoidDelegate(SetText);
+                StringArgReturningVoidDelegate d = new StringArgReturningVoidDelegate(SetLogText);
                 this.Invoke(d, new object[] { text });
             }
             else
             {
+                this.txtLog.ResetText();
                 this.txtLog.AppendText(text);
             }
         }
@@ -74,8 +75,21 @@ namespace Unitec
 
         private void OnLogUpdated(object obj, FileSystemEventArgs args)
         {
-            var line = File.ReadLines(args.FullPath).LastOrDefault();
-            SetText(line + "\r\n");
+            try
+            {
+                StringBuilder lines = new StringBuilder();
+                var logs = File.ReadLines(args.FullPath).Reverse().Take(10);
+                foreach (var line in logs)
+                {
+                    lines.Append(line);
+                    lines.Append("\r\n");
+                }
+                SetLogText(lines.ToString());
+            }
+            catch
+            {
+
+            }
         }
         private void btnConnect_Click(object sender, EventArgs e)
         {
@@ -108,7 +122,7 @@ namespace Unitec
 
         private void btnCardFailure_Click(object sender, EventArgs e)
         {
-            cardReader.CardReadFailure
+      
         }
 
         private void btnInsertTimeout_Click(object sender, EventArgs e)

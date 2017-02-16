@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -21,7 +22,11 @@ namespace Unitec.Middleware.Services
         {
             peripheralsConfigFile = file;
             //TODO:- Read Config file to populate the fields
-            ComPort = "COM3";
+
+            var configFile = ConfigurationManager.OpenExeConfiguration(file);
+            var settings = configFile.AppSettings.Settings;
+
+            ComPort = "";
             BaudRate = 38400;
             Parity = Parity.None;
             DataBits = 8;

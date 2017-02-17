@@ -13,7 +13,7 @@ using Unitec.Middleware;
 namespace Unitec
 {
     public partial class CreditCardTestHarness : Form
-    {
+    {   
         private CreditCardReader cardReader;
         delegate void StringArgReturningVoidDelegate(string text);
         public CreditCardTestHarness()
@@ -21,7 +21,59 @@ namespace Unitec
             InitializeComponent();
             cardReader = new CreditCardReader();
             txtLogFilePath.Text = "C:\\Unitec\\Log\\Unitec.Middleware.log";
-            txtConfigFilePath.Text = "C:\\Unitec\\Config\\CreditCardReader.config";
+            txtConfigFilePath.Text = "..\\..\\CreditCardReader.config";
+            cardReader.DeviceErrorOccurred += CardReader_DeviceErrorOccurred;
+            cardReader.DeviceConnected += CardReader_DeviceConnected;
+            cardReader.DeviceDisconnected += CardReader_DeviceDisconnected;
+            cardReader.CardDataObtained += CardReader_CardDataObtained;
+            cardReader.CardInserted += CardReader_CardInserted;
+            cardReader.CardInsertTimeout += CardReader_CardInsertTimeout;
+            cardReader.CardReadFailure += CardReader_CardReadFailure;
+        }
+
+        private void CardReader_CardReadFailure(object sender, Middleware.Contracts.DeviceErrorEventArgs e)
+        {
+            txtResult.AppendText("Could not read the card");
+            foreach (var err in e.DeviceErrors)
+            {
+                txtLog.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code, err.Description));
+            }
+        }
+
+        private void CardReader_CardInsertTimeout(object sender, EventArgs e)
+        {
+            txtResult.Text = "Card reader timeout";
+        }
+
+        private void CardReader_CardInserted(object sender, EventArgs e)
+        {
+            txtResult.Text = "Card Inserted";
+        }
+
+        private void CardReader_CardDataObtained(object sender, Middleware.Contracts.CardDataObtainedEventArgs e)
+        {
+            txtResult.AppendText(e.Track1Data);
+            txtResult.AppendText(e.Track2Data);
+            txtResult.AppendText(e.Track3Data);
+
+        }
+
+        private void CardReader_DeviceDisconnected(object sender, EventArgs e)
+        {
+            txtResult.Text = "Device Disconnected";
+        }
+
+        private void CardReader_DeviceConnected(object sender, EventArgs e)
+        {
+            txtResult.Text = "Device Connected";
+        }
+
+        private void CardReader_DeviceErrorOccurred(object sender, Middleware.Contracts.DeviceErrorEventArgs e)
+        {
+            foreach (var err in e.DeviceErrors)
+            {
+                txtLog.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
+            }
         }
 
         private void CreditCardReader_Load(object sender, EventArgs e)
@@ -36,8 +88,10 @@ namespace Unitec
 
         private void btnRunDiagnostic_Click(object sender, EventArgs e)
         {
-            //var res = cardReader.RunDiagnosticTests();
-           // txtResult.Text = res.ToString();
+            List<string> symptomsCodes = null;
+            string deviceInfo = "";
+           var res = cardReader.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
+           txtResult.AppendText(res.ToString());
         }
 
         private void btnTerminate_Click(object sender, EventArgs e)
@@ -52,45 +106,8 @@ namespace Unitec
             cardReader.LogFile = txtLogFilePath.Text;
             var res = cardReader.InitializeDevice();
             txtResult.Text = res.ToString();
-            Program.CreateFileWatcher(cardReader.LogFile, OnLogUpdated);
         }
 
-        private void SetLogText(string text)
-        {
-            // InvokeRequired required compares the thread ID of the  
-            // calling thread to the thread ID of the creating thread.  
-            // If these threads are different, it returns true.  
-            if (this.txtLog.InvokeRequired)
-            {
-                StringArgReturningVoidDelegate d = new StringArgReturningVoidDelegate(SetLogText);
-                this.Invoke(d, new object[] { text });
-            }
-            else
-            {
-                this.txtLog.ResetText();
-                this.txtLog.AppendText(text);
-            }
-        }
-
-
-        private void OnLogUpdated(object obj, FileSystemEventArgs args)
-        {
-            try
-            {
-                StringBuilder lines = new StringBuilder();
-                var logs = File.ReadLines(args.FullPath).Reverse().Take(10);
-                foreach (var line in logs)
-                {
-                    lines.Append(line);
-                    lines.Append("\r\n");
-                }
-                SetLogText(lines.ToString());
-            }
-            catch
-            {
-
-            }
-        }
         private void btnConnect_Click(object sender, EventArgs e)
         {
             var res = cardReader.ConnectToDevice();

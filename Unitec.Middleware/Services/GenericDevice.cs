@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Unitec.Middleware.Contracts;
 
@@ -15,18 +16,24 @@ namespace Unitec.Middleware.Services
     {
 
         #region Properties
+        protected SerialPort DevicePort { get; set; }
+        private byte[] message = new byte[8];
+        private AutoResetEvent messageReceived = new AutoResetEvent(false);
+        private AutoResetEvent errorReceived = new AutoResetEvent(false);
+
         private DeviceStatus currentStatus;
         private string firmwareVersion;
         private string logFile;
+        private int timeOut;
         public string LogFile
         {
             get
             {
                 return logFile;
             }
-             set
+            set
             {
-                if(logFile != value)
+                if (logFile != value)
                 {
                     logFile = value;
                     var dir = Path.GetDirectoryName(logFile);
@@ -39,6 +46,19 @@ namespace Unitec.Middleware.Services
         }
 
         public string PeripheralsConfigFile { get; set; }
+
+        public GenericDevice()
+        {
+            this.timeOut = 5000; //default
+            currentStatus = DeviceStatus.NotInitialized;
+        }
+
+        public GenericDevice(int timeOut)
+        {
+             this.timeOut = timeOut;
+             currentStatus = DeviceStatus.NotInitialized;
+        }
+
         public bool IsConnected
         {
             get
@@ -66,21 +86,77 @@ namespace Unitec.Middleware.Services
 
         #endregion
 
-        #region Methods
-        public GenericDevice()
+        #region Interface Methods
+
+        virtual public bool InitializeDevice()
         {
-            currentStatus = DeviceStatus.NotInitialized;
+            "Attempting to Initialize Device...".Log(LogFile);
+            if (String.IsNullOrEmpty(PeripheralsConfigFile) && File.Exists(PeripheralsConfigFile))
+            {
+                throw new FileNotFoundException("Config file missing.", PeripheralsConfigFile);
+            }
+            var conn = new PeripheralConnection(PeripheralsConfigFile);
+
+            DevicePort = new SerialPort(conn.ComPort, conn.BaudRate,
+                                             conn.Parity, conn.DataBits, conn.StopBits);
+            currentStatus = DeviceStatus.Initialized;
+            "Successfully Initialized the Device...".Log(LogFile);
+            return true;
         }
-        abstract public bool InitializeDevice();
-        abstract public bool ConnectToDevice();
-        abstract public bool DisconnectFromDevice();
-        abstract public bool EnableDevice();
-        abstract public bool DisableDevice();
+        virtual public bool ConnectToDevice()
+        {
+            if(currentStatus == DeviceStatus.NotInitialized)
+            {
+                throw new InvalidOperationException("Device is not initialized..");
+            }
+            "Attempting to Connect Device...".Log(LogFile);
+            if (!DevicePort.IsOpen)
+            {
+                DevicePort.Open();
+                DevicePort.DataReceived += HandleSerialDataReceived;
+                DevicePort.ErrorReceived += HandleErrorReceived;
+            }
+            currentStatus = DeviceStatus.Connected;
+            "Successfully Connected to Device...".Log(LogFile);
+            return true;
+        }
+        virtual public bool DisconnectFromDevice()
+        {
+            "Attempting to Disconnect Device...".Log(LogFile);
+            if (DevicePort.IsOpen)
+            {
+                DevicePort.Close();
+            }
+            currentStatus = DeviceStatus.Disconnected;
+            "Successfully Disconnected the Device...".Log(LogFile);
+            return true;
+        }
+        virtual public bool EnableDevice()
+        {
+            "Attempting to Enable Device...".Log(LogFile);
+            DevicePort.DtrEnable = true;
+            currentStatus = DeviceStatus.Enabled;
+            "Successfully Enabled the Device...".Log(LogFile);
+            return true;
+        }
+        virtual public bool DisableDevice()
+        {
+            if (IsEnabled)
+            {
+                "Attempting to Disable Device...".Log(LogFile);
+                DevicePort.DtrEnable = false;
+                "Successfully Disabled the Device...".Log(LogFile);
+                currentStatus = DeviceStatus.Disabled;
+            }
+            return true;
+        }
         abstract public bool ResetHardware();
         abstract public bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report);
         abstract public bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo);
         abstract public bool TerminateDevice();
+        #endregion
 
+        #region Helper Methods
         protected virtual void HandleException(Exception ex, DeviceErrorType error)
         {
             if (ex != null)
@@ -95,6 +171,50 @@ namespace Unitec.Middleware.Services
         protected virtual void WriteLog(Exception ex)
         {
             ex.Log(LogFile);
+        }
+
+        protected byte[] ReadResponse()
+        {
+            if (ReadSignaled())
+            {
+                if(DevicePort.Read(message, 0, message.Count()) > 0)
+                {
+                    return message;
+                }
+            }
+            return null;
+        }
+
+
+        protected void WriteCommand(byte[] command)
+        {
+            if (command != null)
+            {
+                DevicePort.Write(command, 0, command.Count());
+            }
+        }
+
+
+        private bool ReadSignaled()
+        {
+            if (WaitHandle.WaitAny(new WaitHandle[] { messageReceived, errorReceived }, timeOut) == 0)
+                return true;
+            return false;
+        }
+
+
+        protected void HandleSerialDataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            if (e.EventType == SerialData.Eof)
+                messageReceived.Set();
+        }
+
+        protected void HandleErrorReceived(object sender, SerialErrorReceivedEventArgs e)
+        {
+            var ex = new Exception(String.Format("Internal Error Code {0}", e.EventType));
+            var eventArgs = ex.Create(DeviceErrorType.ErrorReceving, LogFile);
+            OnDeviceErrorOccurred(eventArgs);
+            errorReceived.Set();
         }
         #endregion
 

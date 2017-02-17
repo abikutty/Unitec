@@ -148,7 +148,7 @@
             // 
             // btnDisable
             // 
-            this.btnDisable.Location = new System.Drawing.Point(820, 180);
+            this.btnDisable.Location = new System.Drawing.Point(499, 180);
             this.btnDisable.Name = "btnDisable";
             this.btnDisable.Size = new System.Drawing.Size(149, 70);
             this.btnDisable.TabIndex = 4;
@@ -158,7 +158,7 @@
             // 
             // btnReset
             // 
-            this.btnReset.Location = new System.Drawing.Point(820, 100);
+            this.btnReset.Location = new System.Drawing.Point(499, 100);
             this.btnReset.Name = "btnReset";
             this.btnReset.Size = new System.Drawing.Size(149, 70);
             this.btnReset.TabIndex = 5;
@@ -168,7 +168,7 @@
             // 
             // btnCheckHealth
             // 
-            this.btnCheckHealth.Location = new System.Drawing.Point(504, 24);
+            this.btnCheckHealth.Location = new System.Drawing.Point(820, 24);
             this.btnCheckHealth.Name = "btnCheckHealth";
             this.btnCheckHealth.Size = new System.Drawing.Size(149, 70);
             this.btnCheckHealth.TabIndex = 7;
@@ -178,7 +178,7 @@
             // 
             // btnRunDiagnostic
             // 
-            this.btnRunDiagnostic.Location = new System.Drawing.Point(504, 104);
+            this.btnRunDiagnostic.Location = new System.Drawing.Point(820, 104);
             this.btnRunDiagnostic.Name = "btnRunDiagnostic";
             this.btnRunDiagnostic.Size = new System.Drawing.Size(149, 70);
             this.btnRunDiagnostic.TabIndex = 8;
@@ -188,7 +188,7 @@
             // 
             // btnTerminate
             // 
-            this.btnTerminate.Location = new System.Drawing.Point(820, 24);
+            this.btnTerminate.Location = new System.Drawing.Point(499, 24);
             this.btnTerminate.Name = "btnTerminate";
             this.btnTerminate.Size = new System.Drawing.Size(149, 70);
             this.btnTerminate.TabIndex = 9;
@@ -198,7 +198,7 @@
             // 
             // btnCardData
             // 
-            this.btnCardData.Location = new System.Drawing.Point(504, 180);
+            this.btnCardData.Location = new System.Drawing.Point(820, 180);
             this.btnCardData.Name = "btnCardData";
             this.btnCardData.Size = new System.Drawing.Size(149, 70);
             this.btnCardData.TabIndex = 14;
@@ -208,7 +208,7 @@
             // 
             // btnCardInserted
             // 
-            this.btnCardInserted.Location = new System.Drawing.Point(665, 180);
+            this.btnCardInserted.Location = new System.Drawing.Point(661, 180);
             this.btnCardInserted.Name = "btnCardInserted";
             this.btnCardInserted.Size = new System.Drawing.Size(149, 70);
             this.btnCardInserted.TabIndex = 15;
@@ -218,7 +218,7 @@
             // 
             // btnInsertTimeout
             // 
-            this.btnInsertTimeout.Location = new System.Drawing.Point(665, 100);
+            this.btnInsertTimeout.Location = new System.Drawing.Point(661, 100);
             this.btnInsertTimeout.Name = "btnInsertTimeout";
             this.btnInsertTimeout.Size = new System.Drawing.Size(149, 70);
             this.btnInsertTimeout.TabIndex = 16;
@@ -228,7 +228,7 @@
             // 
             // btnCardFailure
             // 
-            this.btnCardFailure.Location = new System.Drawing.Point(665, 24);
+            this.btnCardFailure.Location = new System.Drawing.Point(661, 24);
             this.btnCardFailure.Name = "btnCardFailure";
             this.btnCardFailure.Size = new System.Drawing.Size(149, 70);
             this.btnCardFailure.TabIndex = 19;

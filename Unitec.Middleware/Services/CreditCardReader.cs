@@ -13,16 +13,28 @@ namespace Unitec.Middleware
 {
     public class CreditCardReader : GenericDevice, ICredirCardReader
     {
-        private SerialPort creditcardPort = null;
-        private byte[] message = new byte[8];
-        private readonly byte[] Resethardware = new byte[] { 60, 00, 02, 53, 18, 29, 03 };
+        private readonly byte[] CmdResetDefault = new byte[] { 0x60, 0x00, 0x02, 0x53, 0x18, 0x29, 0x03 };
+        private readonly byte[] CmdGetFirmwareVer = new byte[] { 0x60, 0x00, 0x01, 0x39, 0x58, 0x03 };
+        private readonly byte[] CmdResetReader = new byte[] { 0x60, 0x00, 0x01, 0x49, 0x28, 0x03 };
+        private readonly byte[] CmdRestoreSettings = new byte[] { 0x60, 0x00, 0x02, 0x53, 0x18, 0x29,0x03};
+        private readonly byte[] CmdReadAllConfig = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x1F, 0x2F, 0x03 };
+        private readonly byte[] CmdReadSerialNumber = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x4E, 0x7E, 0x03 };
+        private readonly byte[] CmdReadyToRead = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x30, 0x02,0x03 };
+        //Error 2 byte data after header
+        //6912 'P' command length must be 1
+        //6916 'P' command data must be 0x30 or 0x32
+        //6920 Reader not configured for buffered mode
+        //6922 Reader not configured for magstripe read
+        //Page 29
+        private readonly byte[] ResponseSuccessMask = new byte[] { 0x90, 0x00 };
+
         private const int timeOut = 5000;
         public event CardDataObtainedEventHandler CardDataObtained;
         public event EventHandler CardInserted;
         public event EventHandler CardInsertTimeout;
         public event DeviceErrorEventHandler CardReadFailure;
-        private AutoResetEvent messageReceived = new AutoResetEvent(false);
-        private AutoResetEvent errorReceived = new AutoResetEvent(false);
+
+
 
         #region Event
         protected virtual void OnCardDataObtained(CardDataObtainedEventArgs e)
@@ -68,6 +80,7 @@ namespace Unitec.Middleware
 
         protected override void OnDeviceErrorOccurred(DeviceErrorEventArgs e)
         {
+
             base.OnDeviceErrorOccurred(e);
         }
 
@@ -87,15 +100,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Connect Device...".Log(LogFile);
-                if (!creditcardPort.IsOpen)
-                {
-                    creditcardPort.Open();
-                    creditcardPort.DataReceived += HandleSerialDataReceived;
-                    creditcardPort.ErrorReceived += HandleErrorReceived;
-                }
-                "Successfully Connected to Device...".Log(LogFile);
-                return true;
+               return base.ConnectToDevice();
             }
             catch (Exception e)
             {
@@ -108,10 +113,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Disable Device...".Log(LogFile);
-                creditcardPort.DtrEnable = false;
-                "Successfully Disabled the Device...".Log(LogFile);
-                return true;
+                return base.DisableDevice();
             }
             catch (Exception e)
             {
@@ -124,13 +126,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Disconnect Device...".Log(LogFile);
-                if (creditcardPort.IsOpen)
-                {
-                    creditcardPort.Close();
-                }
-                "Successfully Disconnected the Device...".Log(LogFile);
-                return true;
+                return base.DisconnectFromDevice();
             }
             catch (Exception e)
             {
@@ -143,10 +139,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Enable Device...".Log(LogFile);
-                creditcardPort.DtrEnable = true;
-                "Successfully Enabled the Device...".Log(LogFile);
-                return true;
+                return base.EnableDevice();
             }
             catch (Exception e)
             {
@@ -159,17 +152,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Initialize Device...".Log(LogFile);
-                if (String.IsNullOrEmpty(PeripheralsConfigFile) || File.Exists(PeripheralsConfigFile))
-                {
-                    throw new FileNotFoundException("Config file missing.", PeripheralsConfigFile);
-                }
-                var conn = new PeripheralConnection(PeripheralsConfigFile);
-
-                creditcardPort = new SerialPort(conn.ComPort, conn.BaudRate,
-                                                 conn.Parity, conn.DataBits, conn.StopBits);
-                "Successfully Initialized the Device...".Log(LogFile);
-                return true;
+                return base.InitializeDevice();
             }
             catch (Exception ex)
             {
@@ -184,21 +167,14 @@ namespace Unitec.Middleware
             try
             {
                 "Attempting to Reset Device...".Log(LogFile);
-                if (creditcardPort != null)
+                WriteCommand(CmdResetDefault);
+                var message = ReadResponse();
+                if (message[3] == 0x90 && message[4] == 0x00)
                 {
-                    creditcardPort.Write(Resethardware, 0, Resethardware.Count());
-
-                    if (ReadSignaled())
-                    {
-                        creditcardPort.Read(message, 0, message.Count());
-                        if (message[3] == 0x90 && message[4] == 0x00)
-                        {
-                            "Successfully Reset the Device...".Log(LogFile);
-                            return true;
-                        }
-                    }
-                    return DisconnectFromDevice();
+                    "Successfully Reset the Device...".Log(LogFile);
+                    return true;
                 }
+                return DisconnectFromDevice();
             }
             catch (Exception ex)
             {
@@ -212,12 +188,7 @@ namespace Unitec.Middleware
         {
             try
             {
-                "Attempting to Close the Device...".Log(LogFile);
-                if (creditcardPort.IsOpen)
-                {
-                    creditcardPort.Close();
-                }
-                "Successfully Closed the Device...".Log(LogFile);
+               
                 return true;
             }
             catch (Exception e)
@@ -234,30 +205,10 @@ namespace Unitec.Middleware
 
         public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)
         {
-            throw new NotImplementedException();
+            if (!DisconnectFromDevice())
+                throw new InvalidOperationException("unable to disconnect the device.");
+            return base.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
         }
         #endregion
-
-        private bool ReadSignaled()
-        {
-            if (WaitHandle.WaitAny(new WaitHandle[] { messageReceived, errorReceived }, timeOut) == 0)
-                return true;
-            return false;
-        }
-
-
-        protected void HandleSerialDataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            if (e.EventType == SerialData.Eof)
-                messageReceived.Set();
-        }
-
-        protected void HandleErrorReceived(object sender, SerialErrorReceivedEventArgs e)
-        {
-            var ex = new Exception(String.Format("Internal Error Code {0}", e.EventType));
-            var eventArgs = ex.Create(DeviceErrorType.ErrorReceving,LogFile);
-            OnDeviceErrorOccurred(eventArgs);
-            errorReceived.Set();
-        }
     }
 }

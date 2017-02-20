@@ -116,6 +116,8 @@ namespace Unitec.Middleware
        
         public override bool ResetHardware()
         {
+            bool isConnected = IsConnected;
+            bool isEnabled = IsEnabled;
             try
             {
                 "Attempting to Reset Device...".Log(LogFile);
@@ -140,21 +142,10 @@ namespace Unitec.Middleware
             {
                 
                 HandleException(ex, DeviceErrorType.UnableToClosePort);
-                return DisconnectFromDevice();
-            }
-            return false;
-        }
-
-        public override bool TerminateDevice()
-        {
-            try
-            {
-               
-                return true;
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.UnableToClosePort);
+                var resp = DisableDevice();
+                resp = resp && DisconnectFromDevice();
+                resp = isConnected && ConnectToDevice();
+                resp = isEnabled && EnableDevice();
             }
             return false;
         }
@@ -162,6 +153,20 @@ namespace Unitec.Middleware
         public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)
         {
             throw new NotImplementedException();
+        }
+        
+        public override bool TerminateDevice()
+        {
+            try
+            {
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
         }
 
         public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)

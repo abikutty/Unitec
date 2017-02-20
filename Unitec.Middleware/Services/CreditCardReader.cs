@@ -13,6 +13,16 @@ namespace Unitec.Middleware
 {
     public class CreditCardReader : GenericDevice, ICredirCardReader
     {
+
+        #region Properties
+        //private readonly UInt64 CmdResetDefault = 0x60000253182903;
+        //private readonly UInt64 CmdGetFirmwareVer = 0x600001395803;
+        //private readonly UInt64 CmdResetReader = 0x600001492803;
+        //private readonly UInt64 CmdRestoreSettings = 0x60000253182903;
+        //private readonly UInt64 CmdReadAllConfig = 0x600002521F2F03;
+        //private readonly UInt64 CmdReadSerialNumber = 0x600002524E7E03;
+        //private readonly UInt64 CmdReadyToRead = 0x6000035001300203;
+
         private readonly byte[] CmdResetDefault = new byte[] { 0x60, 0x00, 0x02, 0x53, 0x18, 0x29, 0x03 };
         private readonly byte[] CmdGetFirmwareVer = new byte[] { 0x60, 0x00, 0x01, 0x39, 0x58, 0x03 };
         private readonly byte[] CmdResetReader = new byte[] { 0x60, 0x00, 0x01, 0x49, 0x28, 0x03 };
@@ -35,8 +45,134 @@ namespace Unitec.Middleware
         public event DeviceErrorEventHandler CardReadFailure;
 
 
+        #endregion
+        
+        #region implementation of Generic Device
+        public override bool InitializeDevice()
+        {
+            try
+            {
+                return base.InitializeDevice();
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, DeviceErrorType.DeviceInitFailed);
+                return false;
+            }
 
-        #region Event
+        }
+
+        public override bool ConnectToDevice()
+        {
+            try
+            {
+               return base.ConnectToDevice();
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.ConnectionFailed);
+            }
+            return false;
+        }
+
+        public override bool DisconnectFromDevice()
+        {
+            try
+            {
+                return base.DisconnectFromDevice();
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
+        }
+
+        public override bool EnableDevice()
+        {
+            try
+            {
+                return base.EnableDevice();
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.NotEnabled);
+            }
+            return false;
+        }
+
+        public override bool DisableDevice()
+        {
+            try
+            {
+                return base.DisableDevice();
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
+        }
+       
+        public override bool ResetHardware()
+        {
+            try
+            {
+                "Attempting to Reset Device...".Log(LogFile);
+                WriteCommand(CmdResetDefault);
+                var message = ReadResponse();
+                if(message == null)
+                {
+                    throw new InvalidOperationException("Read timeout...");
+                }
+                if(message.Length < 5)
+                {
+                    throw new InvalidOperationException(String.Format("Partial read {0} ", BitConverter.ToString(message)));
+                }
+                if (message[3] == 0x90 && message[4] == 0x00)
+                {
+                    "Successfully Reset the Device...".Log(LogFile);
+                    return true;
+                }
+               
+            }
+            catch (Exception ex)
+            {
+                
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
+                return DisconnectFromDevice();
+            }
+            return false;
+        }
+
+        public override bool TerminateDevice()
+        {
+            try
+            {
+               
+                return true;
+            }
+            catch (Exception e)
+            {
+                HandleException(e, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
+        }
+
+        public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)
+        {
+          //  if (!DisconnectFromDevice())
+                throw new InvalidOperationException("unable to disconnect the device.");
+           // return base.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
+        }
+        #endregion
+
+        #region Events
         protected virtual void OnCardDataObtained(CardDataObtainedEventArgs e)
         {
             CardDataObtainedEventHandler handler = CardDataObtained;
@@ -73,10 +209,6 @@ namespace Unitec.Middleware
                 handler(this, e);
             }
         }
-        #endregion
-
-        #region implementation of Generic Device
-
 
         protected override void OnDeviceErrorOccurred(DeviceErrorEventArgs e)
         {
@@ -96,119 +228,6 @@ namespace Unitec.Middleware
             base.OnDeviceDisconnected(e);
         }
 
-        public override bool ConnectToDevice()
-        {
-            try
-            {
-               return base.ConnectToDevice();
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.ConnectionFailed);
-            }
-            return false;
-        }
-
-        public override bool DisableDevice()
-        {
-            try
-            {
-                return base.DisableDevice();
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.UnableToClosePort);
-            }
-            return false;
-        }
-
-        public override bool DisconnectFromDevice()
-        {
-            try
-            {
-                return base.DisconnectFromDevice();
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.UnableToClosePort);
-            }
-            return false;
-        }
-
-        public override bool EnableDevice()
-        {
-            try
-            {
-                return base.EnableDevice();
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.NotEnabled);
-            }
-            return false;
-        }
-
-        public override bool InitializeDevice()
-        {
-            try
-            {
-                return base.InitializeDevice();
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex, DeviceErrorType.DeviceInitFailed);
-                return false;
-            }
-
-        }
-        
-        public override bool ResetHardware()
-        {
-            try
-            {
-                "Attempting to Reset Device...".Log(LogFile);
-                WriteCommand(CmdResetDefault);
-                var message = ReadResponse();
-                if (message[3] == 0x90 && message[4] == 0x00)
-                {
-                    "Successfully Reset the Device...".Log(LogFile);
-                    return true;
-                }
-                return DisconnectFromDevice();
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex, DeviceErrorType.UnableToClosePort);
-                return false;
-            }
-            return false;
-        }
-
-        public override bool TerminateDevice()
-        {
-            try
-            {
-               
-                return true;
-            }
-            catch (Exception e)
-            {
-                HandleException(e, DeviceErrorType.UnableToClosePort);
-            }
-            return false;
-        }
-
-        public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)
-        {
-            if (!DisconnectFromDevice())
-                throw new InvalidOperationException("unable to disconnect the device.");
-            return base.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
-        }
         #endregion
     }
 }

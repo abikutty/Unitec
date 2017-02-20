@@ -13,6 +13,14 @@ namespace Unitec.Middleware.Contracts
 
     public delegate void DeviceErrorEventHandler(object sender, DeviceErrorEventArgs e);
 
+
+    public enum ReadStatus
+    {
+        Failed = 0,
+        Timeout = 1,
+        Success = 2
+    }
+
     public enum LogType
     {
         Error = 1,

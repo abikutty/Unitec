@@ -127,7 +127,7 @@ namespace Unitec.Middleware
             {
                 "Attempting to Reset Device...".Log(LogFile);
                 WriteCommand(CmdResetDefault);
-                var message = ReadResponse(5);
+                var message = ReadResponse();
                 if (message[3] == 0x90 && message[4] == 0x00)
                 {
                     "Successfully Reset the Device...".Log(LogFile);
@@ -185,10 +185,14 @@ namespace Unitec.Middleware
             "Attempting to read hardware information...".Log(LogFile);
             WriteCommand(CmdGetFirmwareVer);
             var message = ReadResponse();
-            if (message[3] == 0x90 && message[4] == 0x00)
+            var length = message[2] - message[1];
+            if(length <= 0)
             {
-                "Successfully Reset the Device...".Log(LogFile);
+                "failed to read hardware information...".Log(LogFile);
+                return "";
             }
+            var response = BitConverter.ToString(message, 3, length);
+            return response;
         }
 
         private void GetReaderStatus(out int code, out string status)
@@ -196,7 +200,7 @@ namespace Unitec.Middleware
             code = 0;
             status = "";
             WriteCommand(CmdReaderStatus);
-            var message = ReadResponse(5);
+            var message = ReadResponse();
             code = message[3] & 0x0F;
             status = (code & 1) == 1 ? "No data in a reader" : "Others";
             status = (code & 2) == 1 ? "Card seated" : "Card not seated";
@@ -234,10 +238,52 @@ namespace Unitec.Middleware
 
         public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)
         {
-          //  if (!DisconnectFromDevice())
-                throw new InvalidOperationException("unable to disconnect the device.");
-           // return base.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
+           symptomsCodes = new List<string>();
+            deviceInfo = "";
+            try
+            {
+                "Attempting to run Diagnostic...".Log(LogFile);
+                if (!IsConnected)
+                {
+                    "Device not connected to check health...".Log(LogFile);
+                    return false;
+                }
+                if (!IsEnabled)
+                {
+                    "Device not enabled to check health...".Log(LogFile);
+                    return false;
+                }
+                GetReaderStatus(out code, out status);
+                hardwareIdentity = GetReaderIndentity();
+                report = GetReaderReport();
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
         }
+
+
+        private string GetReaderDeviceInformation()
+        {
+            "Attempting to read device information...".Log(LogFile);
+            WriteCommand(CmdReadAllConfig);
+            var message = ReadResponse();
+            var length = message[2] - message[1];
+            if (length <= 0)
+            {
+                "Failed to read device information...".Log(LogFile);
+                return "";
+            }
+            var response = BitConverter.ToString(message, 3, length);
+            return response;
+        }
+
+
+
         #endregion
 
         #region Events

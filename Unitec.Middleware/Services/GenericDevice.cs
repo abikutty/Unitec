@@ -275,15 +275,21 @@ namespace Unitec.Middleware.Services
             {
                 if(DevicePort.Read(message, 0, message.Count()) > 0)
                 {
+                    String.Format("Received response {0}", message).Log(LogFile);
+                    if (message[0] != (int) ResponseStatus.ACK)
+                    {
+                        throw new InvalidOperationException(String.Format("ACK wasn't received", BitConverter.ToString(message)));
+                    }
                     return message;
                 }
             }
-            return null;
+            throw new InvalidOperationException("Read timeout...");
         }
 
 
         protected void WriteCommand(byte[] command)
         {
+            String.Format("Sending command {0}", command).Log(LogFile);
             if (command != null)
             {
                 DevicePort.Write(command, 0, command.Count());

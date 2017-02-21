@@ -9,6 +9,12 @@ namespace Unitec.Middleware.Contracts
 {
     public delegate void CardDataObtainedEventHandler(object sender, CardDataObtainedEventArgs e);
 
+    public enum ResponseStatus
+    {
+       ACK = 6,
+       NAK = 21,
+
+    }
     public class CardDataObtainedEventArgs : EventArgs
     {
         public string Track1Data { get; set; }

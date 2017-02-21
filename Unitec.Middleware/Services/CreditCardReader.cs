@@ -29,7 +29,12 @@ namespace Unitec.Middleware
         private readonly byte[] CmdRestoreSettings = new byte[] { 0x60, 0x00, 0x02, 0x53, 0x18, 0x29,0x03};
         private readonly byte[] CmdReadAllConfig = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x1F, 0x2F, 0x03 };
         private readonly byte[] CmdReadSerialNumber = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x4E, 0x7E, 0x03 };
-        private readonly byte[] CmdReadyToRead = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x30, 0x02,0x03 };
+        private readonly byte[] CmdReaderStatus = new byte[] { 0x60, 0x00, 0x01, 0x24, 0x45, 0x03 };
+
+
+        private readonly byte[] CmdBfrModeReadyToRead = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x30, 0x02,0x03 };
+        private readonly byte[] CmdBfrModeReset = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x32, 0x02, 0x03 };
+        private readonly byte[] CmdBfrModeRead = new byte[] { 0x60, 0x00, 0x03, 0x51, 0x01, 0x32, 0x02, 0x03 };
         //Error 2 byte data after header
         //6912 'P' command length must be 1
         //6916 'P' command data must be 0x30 or 0x32
@@ -122,15 +127,7 @@ namespace Unitec.Middleware
             {
                 "Attempting to Reset Device...".Log(LogFile);
                 WriteCommand(CmdResetDefault);
-                var message = ReadResponse();
-                if(message == null)
-                {
-                    throw new InvalidOperationException("Read timeout...");
-                }
-                if(message.Length < 5)
-                {
-                    throw new InvalidOperationException(String.Format("Partial read {0} ", BitConverter.ToString(message)));
-                }
+                var message = ReadResponse(5);
                 if (message[3] == 0x90 && message[4] == 0x00)
                 {
                     "Successfully Reset the Device...".Log(LogFile);
@@ -152,9 +149,75 @@ namespace Unitec.Middleware
 
         public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)
         {
-            throw new NotImplementedException();
+            code = 0;
+            status = "";
+            hardwareIdentity = "";
+            report = "";
+            try
+            {
+                "Attempting to check device health...".Log(LogFile);
+                if(!IsConnected)
+                {
+                    "Device not connected to check health...".Log(LogFile);
+                    return false;
+                }
+                if (!IsEnabled)
+                {
+                    "Device not enabled to check health...".Log(LogFile);
+                    return false;
+                }
+                GetReaderStatus(out code, out status);
+                hardwareIdentity = GetReaderIndentity();
+                report = GetReaderReport();
+                return true;
+   
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
+            }
+            return false;
         }
-        
+
+
+        private string GetReaderIndentity()
+        {
+            "Attempting to read hardware information...".Log(LogFile);
+            WriteCommand(CmdGetFirmwareVer);
+            var message = ReadResponse();
+            if (message[3] == 0x90 && message[4] == 0x00)
+            {
+                "Successfully Reset the Device...".Log(LogFile);
+            }
+        }
+
+        private void GetReaderStatus(out int code, out string status)
+        {
+            code = 0;
+            status = "";
+            WriteCommand(CmdReaderStatus);
+            var message = ReadResponse(5);
+            code = message[3] & 0x0F;
+            status = (code & 1) == 1 ? "No data in a reader" : "Others";
+            status = (code & 2) == 1 ? "Card seated" : "Card not seated";
+            status = (code & 4) == 1 ? "Media detected" : "Others";
+            status = (code & 8) == 1 ? "Card present" : "Card not present";
+            status = (code & 16) == 1 ? "Magnetic data present" : "No magnetic data";
+            status = (code & 32) == 1 ? "Card in Slot" : "All other conditions";
+            status = (code & 64) == 1 ? "Incomplete Insertion" : "All other conditions";
+            if (String.IsNullOrEmpty(status))
+            {
+                status = "enexpected status";
+            }
+        }
+
+
+        private string GetReaderReport()
+        {
+            return "";
+        }
+
+
         public override bool TerminateDevice()
         {
             try

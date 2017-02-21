@@ -9,17 +9,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Unitec.Middleware;
+using Unitec.Middleware.Contracts;
+using Unitec.Middleware.Devices;
+using Unitec.Middleware.Helpers;
+
 
 namespace Unitec
 {
     public partial class CreditCardTestHarness : Form
     {   
-        private CreditCardReader cardReader;
+        private ICreditCardReader cardReader;
         delegate void StringArgReturningVoidDelegate(string text);
         public CreditCardTestHarness()
         {
             InitializeComponent();
-            cardReader = new CreditCardReader();
+            cardReader =  DeviceContainer.GetDevice<ICreditCardReader>();
+
             txtLogFilePath.Text = "C:\\Unitec\\Log\\Unitec.Middleware.log";
             txtConfigFilePath.Text = "..\\..\\CreditCardReader.config";
             cardReader.DeviceErrorOccurred += CardReader_DeviceErrorOccurred;
@@ -31,7 +36,7 @@ namespace Unitec
             cardReader.CardReadFailure += CardReader_CardReadFailure;
         }
 
-        private void CardReader_CardReadFailure(object sender, Middleware.Contracts.DeviceErrorEventArgs e)
+        private void CardReader_CardReadFailure(object sender, DeviceErrorEventArgs e)
         {
             txtResult.AppendText("Could not read the card");
             foreach (var err in e.DeviceErrors)
@@ -50,7 +55,7 @@ namespace Unitec
             txtResult.Text = "Card Inserted";
         }
 
-        private void CardReader_CardDataObtained(object sender, Middleware.Contracts.CardDataObtainedEventArgs e)
+        private void CardReader_CardDataObtained(object sender, CardDataObtainedEventArgs e)
         {
             txtResult.AppendText(e.Track1Data);
             txtResult.AppendText(e.Track2Data);
@@ -68,7 +73,7 @@ namespace Unitec
             txtResult.Text = "Device Connected";
         }
 
-        private void CardReader_DeviceErrorOccurred(object sender, Middleware.Contracts.DeviceErrorEventArgs e)
+        private void CardReader_DeviceErrorOccurred(object sender,DeviceErrorEventArgs e)
         {
             foreach (var err in e.DeviceErrors)
             {

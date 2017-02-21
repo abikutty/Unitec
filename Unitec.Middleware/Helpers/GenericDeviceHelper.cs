@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Unitec.Middleware.Contracts
+namespace Unitec.Middleware.Helpers
 {
 
     public delegate void DeviceErrorEventHandler(object sender, DeviceErrorEventArgs e);

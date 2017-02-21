@@ -8,8 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unitec.Middleware.Contracts;
+using Unitec.Middleware.Helpers;
 
-namespace Unitec.Middleware.Services
+namespace Unitec.Middleware.Devices
 {
 
     public abstract class GenericDevice : IGenericDevice
@@ -66,6 +67,15 @@ namespace Unitec.Middleware.Services
                 return currentStatus == DeviceStatus.Connected;
             }
         }
+
+        public bool IsDisconnected
+        {
+            get
+            {
+                return currentStatus == DeviceStatus.Disconnected;
+            }
+        }
+
         public bool IsEnabled
         {
 
@@ -327,6 +337,11 @@ namespace Unitec.Middleware.Services
             var eventArgs = ex.Create(DeviceErrorType.ErrorReceving, LogFile);
             OnDeviceErrorOccurred(eventArgs);
             errorReceived.Set();
+        }
+
+        public void Dispose()
+        {
+            
         }
         #endregion
     }

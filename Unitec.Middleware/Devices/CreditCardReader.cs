@@ -4,25 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Unitec.Middleware.Contracts;
-using Unitec.Middleware.Services;
+using Unitec.Middleware.Devices;
 using System.IO.Ports;
 using System.IO;
 using System.Threading;
+using Unitec.Middleware.Helpers;
 
-namespace Unitec.Middleware
+namespace Unitec.Middleware.Devices
 {
-    public class CreditCardReader : GenericDevice, ICredirCardReader
+    public class CreditCardReader : GenericDevice, ICreditCardReader, IDisposable
     {
 
         #region Properties
-        //private readonly UInt64 CmdResetDefault = 0x60000253182903;
-        //private readonly UInt64 CmdGetFirmwareVer = 0x600001395803;
-        //private readonly UInt64 CmdResetReader = 0x600001492803;
-        //private readonly UInt64 CmdRestoreSettings = 0x60000253182903;
-        //private readonly UInt64 CmdReadAllConfig = 0x600002521F2F03;
-        //private readonly UInt64 CmdReadSerialNumber = 0x600002524E7E03;
-        //private readonly UInt64 CmdReadyToRead = 0x6000035001300203;
-
         private readonly byte[] CmdResetDefault = new byte[] { 0x60, 0x00, 0x02, 0x53, 0x18, 0x29, 0x03 };
         private readonly byte[] CmdGetFirmwareVer = new byte[] { 0x60, 0x00, 0x01, 0x39, 0x58, 0x03 };
         private readonly byte[] CmdResetReader = new byte[] { 0x60, 0x00, 0x01, 0x49, 0x28, 0x03 };
@@ -31,27 +24,17 @@ namespace Unitec.Middleware
         private readonly byte[] CmdReadSerialNumber = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x4E, 0x7E, 0x03 };
         private readonly byte[] CmdReaderStatus = new byte[] { 0x60, 0x00, 0x01, 0x24, 0x45, 0x03 };
 
-
-        private readonly byte[] CmdBfrModeReadyToRead = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x30, 0x02,0x03 };
-        private readonly byte[] CmdBfrModeReset = new byte[] { 0x60, 0x00, 0x03, 0x50, 0x01, 0x32, 0x02, 0x03 };
-        private readonly byte[] CmdBfrModeRead = new byte[] { 0x60, 0x00, 0x03, 0x51, 0x01, 0x32, 0x02, 0x03 };
-        //Error 2 byte data after header
-        //6912 'P' command length must be 1
-        //6916 'P' command data must be 0x30 or 0x32
-        //6920 Reader not configured for buffered mode
-        //6922 Reader not configured for magstripe read
-        //Page 29
-        private readonly byte[] ResponseSuccessMask = new byte[] { 0x90, 0x00 };
+        private readonly byte[] CmdSetTransmitModeMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x1A, 0x01, 0xFF, 0xFF, 0x03};
+        private readonly byte[] CmdSetReadDirectionMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x1D, 0x01, 0xFF, 0xFF, 0x03 };
+        private readonly byte[] CmdSetSendOptionMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x19, 0x01, 0xFF, 0xFF, 0x03 };
 
         private const int timeOut = 5000;
         public event CardDataObtainedEventHandler CardDataObtained;
         public event EventHandler CardInserted;
         public event EventHandler CardInsertTimeout;
         public event DeviceErrorEventHandler CardReadFailure;
-
-
         #endregion
-        
+
         #region implementation of Generic Device
         public override bool InitializeDevice()
         {
@@ -226,12 +209,28 @@ namespace Unitec.Middleware
         {
             try
             {
+                "Attempting to Reset Device...".Log(LogFile);
+                if(!IsDisconnected)
+                {
+                    "Device is not disconnected".Log(LogFile);
+                    return false;
+                }
+                WriteCommand(CmdResetReader);
+                var message = ReadResponse();
+                if (message[3] == 0x90 && message[4] == 0x00)
+                {
+                    "Successfully Reset the Device...".Log(LogFile);
+                    DeviceContainer.DisposeDevice(this);
+                    return true;
+                }
 
-                return true;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                HandleException(e, DeviceErrorType.UnableToClosePort);
+
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
+                var resp = DisableDevice();
+                resp = resp && DisconnectFromDevice();
             }
             return false;
         }
@@ -239,23 +238,73 @@ namespace Unitec.Middleware
         public override bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo)
         {
            symptomsCodes = new List<string>();
+            deviceInfo = "NO_INFO";
             deviceInfo = "";
             try
             {
-                "Attempting to run Diagnostic...".Log(LogFile);
+                "Attempting to run diagnostic...".Log(LogFile);
                 if (!IsConnected)
                 {
-                    "Device not connected to check health...".Log(LogFile);
+                    "Device not connected to run diagnostic...".Log(LogFile);
                     return false;
                 }
                 if (!IsEnabled)
                 {
-                    "Device not enabled to check health...".Log(LogFile);
+                    "Device not enabled to run diagnostic..".Log(LogFile);
                     return false;
                 }
-                GetReaderStatus(out code, out status);
-                hardwareIdentity = GetReaderIndentity();
-                report = GetReaderReport();
+                var info = GetReaderDeviceInformation();
+                deviceInfo = !String.IsNullOrEmpty(info) ? info : "NO_INFO";
+                //Set MSR Transmit Modes
+                symptomsCodes.Add(RunSettingCommand("Set MSR Transmit Mode disabled", CmdSetTransmitModeMask, 0x00, 6, 7)
+                    ? "Set MSR Transmit Mode disabled - failed" : "Set MSR Transmit Mode disabled - succeded");
+
+                symptomsCodes.Add(RunSettingCommand("MSR Reading Auto Transmit Mode", CmdSetTransmitModeMask, 0x01, 6, 7)
+                ? "MSR Reading Auto Transmit Mode - failed" : "MSR Reading Auto Transmit Mode - succeded");
+
+                symptomsCodes.Add(RunSettingCommand("MSR Reading in Buffered Mode", CmdSetTransmitModeMask, 0x02, 6, 7)
+                ? "MSR Reading in Buffered Mode - failed" : "MSR Reading in Buffered Mode - succeded");
+
+                //Set MSR Read Directions
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Read Direction both insertion and withdrawal", CmdSetReadDirectionMask, 0x01, 5, 6)
+                ? "Set MSR Read Direction - both insertion and withdrawal failed" : "Set MSR Read Direction both insertion and withdrawal succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Read Direction Read on insertion only", CmdSetReadDirectionMask, 0x02, 6, 7)
+                ? "Set MSR Read Direction Read on insertion only failed" : "Set MSR Read Direction Read on insertion only succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Read Direction Report on withdrawal", CmdSetReadDirectionMask, 0x03, 6, 7)
+                 ? "Set MSR Read Direction Report on withdrawal failed" : "Set MSR Read Direction Report on withdrawal succeded");
+                
+                symptomsCodes.Add(RunSettingCommand("Set MSR Read Direction Read on withdrawal only", CmdSetReadDirectionMask, 0x04, 6, 7)
+                 ? "Set MSR Read Direction Read on withdrawal only failed" : "Set MSR Read Direction Read on withdrawal only succeded");
+
+                //Set MSR Send Option
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option No Start/End Sentinel, all data,no error", CmdSetSendOptionMask, 0x1E, 5, 6)
+                ? "Set MSR Send Option No Start/End Sentinel, all data,no error failed" : "Set MSR Send Option No Start/End Sentinel, all data,no error succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option Start/End Sentinel, all data, no error", CmdSetSendOptionMask, 0x1F, 5, 6)
+                ? "Set MSR Send Option Start/End Sentinel, all data, no error failed" : "Set MSR Send Option Start/End Sentinel, all data, no error succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option No Start/End Sentinel, account on t2, no error", CmdSetSendOptionMask, 0x20, 5, 6)
+                ? "Set MSR Send Option No Start/End Sentinel, account on t2, no error failed" : "Set MSR Send Option No Start/End Sentinel, account on t2, no error succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option Start/End Sentinel t1/t2 for credit card and t1/t3 for other card, no error", CmdSetSendOptionMask, 0x21, 5, 6)
+                ? "Set MSR Send Option Start / End Sentinel t1 / t2 for credit card and t1 / t3 for other card, no error failed" : "Set MSR Send Option Start/End Sentinel t1/t2 for credit card and t1/t3 for other card, no error succeded");
+                
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option No Start/End Sentinel, all data, error", CmdSetSendOptionMask, 0x22, 5, 6)
+                ? "Set MSR Send Option No Start/End Sentinel, all data, error failed" : "Set MSR Send Option No Start / End Sentinel, all data, error succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option Start/End Sentinel, all data, error", CmdSetSendOptionMask, 0x23, 5, 6)
+                ? "Set MSR Send Option Start/End Sentinel, all data, error failed" : "Set MSR Send Option Start/End Sentinel, all data, error succeded");
+                
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option No Start/End Sentinel, account on t2, error", CmdSetSendOptionMask, 0x24, 5, 6)
+                ? "Set MSR Send Option No Start / End Sentinel, account on t2, error failed" : "Set MSR Send Option No Start / End Sentinel, account on t2, error succeded");
+
+                symptomsCodes.Add(RunSettingCommand("Set MSR Send Option tart/End Sentinel, account on t2 for credit, t1/t3 for other, error", CmdSetSendOptionMask, 0x25, 5, 6)
+                ? "Set MSR Send Option tart/End Sentinel, account on t2 for credit, t1/t3 for other, error failed" : "Set MSR Send Option tart/End Sentinel, account on t2 for credit, t1/t3 for other, error succeded");
+
                 return true;
 
             }
@@ -266,6 +315,29 @@ namespace Unitec.Middleware
             return false;
         }
 
+        private bool RunSettingCommand(string commandName, byte[] command, byte commandID,int cmdOffset, int lrcOffset)
+        {
+            String.Format("Attempting to set {0}...", commandName).Log(LogFile);
+            command[cmdOffset] =  (byte) (command[2] & commandID);
+            byte lrc = 0x00;
+            for(int i=0; i< lrcOffset; i++)
+            {
+                lrc = (byte) (lrc ^ command[i]); 
+            }
+            command[lrcOffset] = lrc;
+            WriteCommand(command);
+            var response = ReadResponse();
+            if (response[3] == 0x90 && response[4] == 0x00)
+            {
+                String.Format("Successfully executed {0}", commandName).Log(LogFile);
+                return true;
+            }
+            else
+            {
+                String.Format("Failed running {0}", commandName).Log(LogFile);
+            }
+            return false;
+        }
 
         private string GetReaderDeviceInformation()
         {
@@ -342,6 +414,6 @@ namespace Unitec.Middleware
             base.OnDeviceDisconnected(e);
         }
 
-        #endregion
+       #endregion
     }
 }

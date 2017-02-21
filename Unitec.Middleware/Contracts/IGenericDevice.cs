@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unitec.Middleware.Helpers;
 
 namespace Unitec.Middleware.Contracts
 {
 
-    interface IGenericDevice
+    public interface IGenericDevice : IDisposable
     {
         #region Properties
         string LogFile { get; set; }
@@ -22,5 +23,14 @@ namespace Unitec.Middleware.Contracts
         event EventHandler DeviceConnected;
         event EventHandler DeviceDisconnected;
         #endregion
+        bool InitializeDevice();
+        bool ConnectToDevice();
+        bool DisconnectFromDevice();
+        bool EnableDevice();
+        bool DisableDevice();
+        bool ResetHardware();
+        bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report);
+        bool RunDiagnosticTests(out List<string> symptomsCodes, out string deviceInfo);
+        bool TerminateDevice();
     }
 }

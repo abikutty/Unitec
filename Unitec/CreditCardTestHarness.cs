@@ -87,12 +87,6 @@ namespace Unitec
                 txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
             }
         }
-
-        private void CreditCardReader_Load(object sender, EventArgs e)
-        {
-
-        }
-
         private void btnCheckHealth_Click(object sender, EventArgs e)
         {
             int code;
@@ -185,7 +179,7 @@ namespace Unitec
 
         private void btnCardInserted_Click(object sender, EventArgs e)
         {
-
+            
         }
 
     }

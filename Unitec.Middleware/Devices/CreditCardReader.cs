@@ -23,10 +23,17 @@ namespace Unitec.Middleware.Devices
         private readonly byte[] CmdReadAllConfig = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x1F, 0x2F, 0x03 };
         private readonly byte[] CmdReadSerialNumber = new byte[] { 0x60, 0x00, 0x02, 0x52, 0x4E, 0x7E, 0x03 };
         private readonly byte[] CmdReaderStatus = new byte[] { 0x60, 0x00, 0x01, 0x24, 0x45, 0x03 };
+        private readonly byte[] CmdReaderOption = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x11, 0x01, 0xFF, 0XFF, 0x03 };
+        private readonly byte[] CmdReaderOption2 = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x2F, 0x01,0xFF,0XFF,0x03 };
 
+        private readonly byte[] CmdSetTrackSelection = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x13, 0x01, 0xFF, 0xFF, 0x03 };
         private readonly byte[] CmdSetTransmitModeMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x1A, 0x01, 0xFF, 0xFF, 0x03};
         private readonly byte[] CmdSetReadDirectionMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x1D, 0x01, 0xFF, 0xFF, 0x03 };
         private readonly byte[] CmdSetSendOptionMask = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x19, 0x01, 0xFF, 0xFF, 0x03 };
+        private readonly byte[] CmdSetTrackSeparator = new byte[] { 0x60, 0x00, 0x04, 0x53, 0x17, 0x01, 0xFF, 0xFF, 0x03 };
+        private readonly byte[] CmdReadMSRData = new byte[] { 0x60, 0x00, 0x03, 0x51, 0x01, 0xFF, 0xFF, 0x03 };
+
+
 
         private const int timeOut = 5000;
         public event CardDataObtainedEventHandler CardDataObtained;
@@ -184,7 +191,7 @@ namespace Unitec.Middleware.Devices
             status = "";
             WriteCommand(CmdReaderStatus);
             var message = ReadResponse();
-            code = message[3] & 0x0F;
+            code = message[3];
             status = (code & 1) == 1 ? "No data in a reader" : "Others";
             status = (code & 2) == 1 ? "Card seated" : "Card not seated";
             status = (code & 4) == 1 ? "Media detected" : "Others";
@@ -194,7 +201,7 @@ namespace Unitec.Middleware.Devices
             status = (code & 64) == 1 ? "Incomplete Insertion" : "All other conditions";
             if (String.IsNullOrEmpty(status))
             {
-                status = "enexpected status";
+                status = "Unexpected status";
             }
         }
 
@@ -339,6 +346,21 @@ namespace Unitec.Middleware.Devices
             return false;
         }
 
+
+        private byte[] RunCommand(string commandName, byte[] command, byte commandID, int cmdOffset, int lrcOffset)
+        {
+            this.Log(String.Format("Attempting to set {0}...", commandName));
+            command[cmdOffset] = (byte)(command[2] & commandID);
+            byte lrc = 0x00;
+            for (int i = 0; i < lrcOffset; i++)
+            {
+                lrc = (byte)(lrc ^ command[i]);
+            }
+            command[lrcOffset] = lrc;
+            WriteCommand(command);
+            return ReadResponse();
+        }
+
         private string GetReaderDeviceInformation()
         {
             this.Log("Attempting to read device information...");
@@ -354,7 +376,93 @@ namespace Unitec.Middleware.Devices
             return response;
         }
 
+        private Task WaitToRead()
+        {
+            return Task.Run(new Action(async () =>
+            {
+                int code;
+                string status;
+                this.Log("Attempting set the reader to read...");
+               
+                if(!RunSettingCommand("Set Tracks 1,2 and 3", CmdSetTrackSelection, 0X07, 6, 7))
+                {
+                    this.Log("Failed to set tracks...");
+                    return;
+                }
 
+                if (!RunSettingCommand("Set to buffered mode", CmdSetTransmitModeMask, 0X02, 6, 7))
+                {
+                    this.Log("Failed to set buffered mode...");
+                    return;
+                }
+
+                if (!RunSettingCommand("Set reader direction", CmdSetReadDirectionMask, 0X01, 6, 7))
+                {
+                    this.Log("Failed to set reader direction...");
+                    return;
+                }
+                if (!RunSettingCommand("Set MSR Send Option Start/End Sentinel t1/t2 for credit card and t1/t3 for other card, no error", CmdSetSendOptionMask, 0x21, 5, 6))
+                {
+                    this.Log("Failed to set the read mode...");
+                    return;
+                }
+
+                if (!RunSettingCommand("Set | as track separator ", CmdSetTrackSeparator, 0XA6, 6, 7))
+                {
+                    this.Log("Failed to set | as track separator...");
+                    return;
+                }
+
+                var response = RunCommand("Read tracks 1,2 and 3", CmdReadMSRData, 0X07, 5, 6);
+                if(response[0] == 0xE0)
+                {
+                    code = BitConverter.ToInt16(response, 3);
+                    switch (code)
+                    {
+                        case 0x6911:
+                            status = "'Q' command length must be 1";
+                            break;
+                        case 0x6921:
+                            status = "reader not configured for buffered mode";
+                            break;
+                        case 0xC000:
+                            status = "no magstripe data available";
+                            break;
+                        default:
+                            status = "Unknow read error";
+                            break;
+                    }
+                }
+                else
+                {
+
+                }
+
+
+                
+
+
+
+                if (RunSettingCommand("Set reader option 2", CmdReaderOption2, 0X1F, 6, 7))
+                {
+                    GetReaderStatus(out code, out status);
+                    if ((code & 32) == 1)
+                        OnCardInserted(new EventArgs());
+                    if ((code & 64) == 0)
+                        OnCardInsertTimeout(new EventArgs());
+                }
+                if (RunSettingCommand("Set reader option", CmdReaderOption, 0XAF, 6, 7))
+                {
+                    GetReaderStatus(out code, out status);
+                    if ((code & 16) == 0)
+                        OnCardReadFailure(new CardReadFailureEventArgs() { DeviceErrors = new List<DeviceError>() { new DeviceError { Code = code, Description = status } } } );
+                    else
+                        OnCardDataObtained(new CardDataObtainedEventArgs() {  Track1Data = })
+                }
+
+                await Task.Delay(1000);
+            }));
+        }
 
         #endregion
 

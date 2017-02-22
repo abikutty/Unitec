@@ -22,7 +22,7 @@ namespace Unitec.Middleware.Devices
         private AutoResetEvent messageReceived = new AutoResetEvent(false);
         private AutoResetEvent errorReceived = new AutoResetEvent(false);
 
-        private DeviceStatus currentStatus;
+        private int currentStatus;
         private string firmwareVersion;
         private string logFile;
         private int timeOut;
@@ -51,20 +51,20 @@ namespace Unitec.Middleware.Devices
         public GenericDevice()
         {
             this.timeOut = 5000; //default
-            currentStatus = DeviceStatus.NotInitialized;
+            currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus);
         }
 
         public GenericDevice(int timeOut)
         {
              this.timeOut = timeOut;
-             currentStatus = DeviceStatus.NotInitialized;
+            currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus);
         }
 
         public bool IsConnected
         {
             get
             {
-                return currentStatus == DeviceStatus.Connected;
+                return DeviceStatus.Connected.CheckDeviceStatus(currentStatus);
             }
         }
 
@@ -72,7 +72,7 @@ namespace Unitec.Middleware.Devices
         {
             get
             {
-                return currentStatus == DeviceStatus.Disconnected;
+                return DeviceStatus.Disconnected.CheckDeviceStatus(currentStatus);
             }
         }
 
@@ -81,7 +81,7 @@ namespace Unitec.Middleware.Devices
 
             get
             {
-                return currentStatus == DeviceStatus.Enabled;
+                return DeviceStatus.Enabled.CheckDeviceStatus(currentStatus);
             }
         }
 
@@ -102,7 +102,11 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-                "Attempting to Initialize Device...".Log(LogFile);
+                this.Log("Attempting to Initialize Device...");
+                if(currentStatus == (int) DeviceStatus.Disposed)
+                {
+                    throw new InvalidOperationException("Invalid Instance, Get new instance from container");
+                }
                 if (String.IsNullOrEmpty(PeripheralsConfigFile) && File.Exists(PeripheralsConfigFile))
                 {
                     throw new FileNotFoundException("Config file missing.", PeripheralsConfigFile);
@@ -111,8 +115,9 @@ namespace Unitec.Middleware.Devices
 
                 DevicePort = new SerialPort(conn.ComPort, conn.BaudRate,
                                                  conn.Parity, conn.DataBits, conn.StopBits);
-                currentStatus = DeviceStatus.Initialized;
-                "Successfully Initialized the Device...".Log(LogFile);
+                currentStatus = DeviceStatus.Initialized.SetDeviceStatus(currentStatus);
+                currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus,true);
+                this.Log("Successfully Initialized the Device...");
             }
             catch
             {
@@ -124,20 +129,21 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-                if (currentStatus == DeviceStatus.NotInitialized)
+                if (DeviceStatus.NotInitialized.CheckDeviceStatus(currentStatus))
                 {
                     throw new InvalidOperationException("Device is not initialized..");
                 }
-                "Attempting to Connect Device...".Log(LogFile);
+                this.Log("Attempting to Connect Device...");
                 if (!DevicePort.IsOpen)
                 {
                     DevicePort.Open();
                     DevicePort.DataReceived += HandleSerialDataReceived;
                     DevicePort.ErrorReceived += HandleErrorReceived;
                 }
-                currentStatus = DeviceStatus.Connected;
+                currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus);
+                currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, true);
                 OnDeviceConnected(new EventArgs());
-                "Successfully Connected to Device...".Log(LogFile);
+                this.Log("Successfully Connected to Device...");
             }
             catch
             {
@@ -151,14 +157,15 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-                "Attempting to Disconnect Device...".Log(LogFile);
+                this.Log("Attempting to Disconnect Device...");
                 if (DevicePort.IsOpen)
                 {
                     DevicePort.Close();
                 }
-                currentStatus = DeviceStatus.Disconnected;
+                currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus);
+                currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, true);
                 OnDeviceDisconnected(new EventArgs());
-                "Successfully Disconnected the Device...".Log(LogFile);
+                this.Log("Successfully Disconnected the Device...");
             }
             catch
             {
@@ -172,18 +179,19 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-                if (currentStatus != DeviceStatus.Connected)
+                if (!IsConnected)
                 {
-                    "Device is not connected..".Log(LogFile);
+                    this.Log("Device is not connected..");
                     return false;
                 }
-                if (currentStatus == DeviceStatus.Enabled)
+                if (IsEnabled)
                 {
                     return true;
                 }
                 DevicePort.DtrEnable = true;
-                currentStatus = DeviceStatus.Enabled;
-                "Successfully Enabled the Device...".Log(LogFile);
+                currentStatus = DeviceStatus.Enabled.SetDeviceStatus(currentStatus);
+                currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus, true);
+                this.Log("Successfully Enabled the Device...");
             }
             catch
             {
@@ -197,16 +205,14 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-
+                this.Log("Attempting to Disable Device...");
                 if (IsEnabled || IsConnected)
                 {
-                    //If connected, should i disconnect before disabiling?
-
-                    "Attempting to Disable Device...".Log(LogFile);
                     DevicePort.DtrEnable = false;
-                    "Successfully Disabled the Device...".Log(LogFile);
-                    currentStatus = DeviceStatus.Disabled;
+                    currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus);
+                    currentStatus = DeviceStatus.Enabled.SetDeviceStatus(currentStatus, true);
                 }
+                this.Log("Successfully Disabled the Device...");
             }
             catch
             {
@@ -226,13 +232,14 @@ namespace Unitec.Middleware.Devices
         public event EventHandler DeviceConnected;
         public event EventHandler DeviceDisconnected;
         public event DeviceErrorEventHandler DeviceErrorOccurred;
+        public event DataLoggedEventHandler DataLogged;
 
         protected virtual void OnDeviceErrorOccurred(DeviceErrorEventArgs e)
         {
             DeviceErrorEventHandler handler = DeviceErrorOccurred;
             if (handler != null)
             {
-                "device error occured".Log(LogFile);
+                this.Log("device error occured");
                 handler(this, e);
             }
         }
@@ -240,11 +247,12 @@ namespace Unitec.Middleware.Devices
 
         protected virtual void OnDeviceConnected(EventArgs e)
         {
-            currentStatus = DeviceStatus.Connected;
+            currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus);
+            currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, true);
             EventHandler handler = DeviceConnected;
             if (handler != null)
             {
-                "device connected".Log(LogFile);
+                this.Log("device connected");
                 handler(this, e);
             }
         }
@@ -252,22 +260,30 @@ namespace Unitec.Middleware.Devices
 
         protected virtual void OnDeviceDisconnected(EventArgs e)
         {
-            currentStatus = DeviceStatus.Disconnected;
+            currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus);
+            currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, true);
             EventHandler handler = DeviceDisconnected;
             if (handler != null)
             {
-                "device disconnected".Log(LogFile);
+                this.Log("device disconnected");
                 handler(this, e);
             }
         }
+
+
+        internal virtual void OnDataLogged(LogEventArgs e)
+        {
+            DataLogged?.Invoke(this, e);
+        }
+
         #endregion
 
-        #region Helper Methods
+        #region Misc. Methods
         protected virtual void HandleException(Exception ex, DeviceErrorType error)
         {
             if (ex != null)
             {
-                var errorArg = ex.Create(error,LogFile);
+                var errorArg = this.Create(ex,error);
                 OnDeviceErrorOccurred(errorArg);
 
             }
@@ -276,7 +292,7 @@ namespace Unitec.Middleware.Devices
 
         protected virtual void WriteLog(Exception ex)
         {
-            ex.Log(LogFile);
+            this.Log(ex);
         }
 
         protected byte[] ReadResponse()
@@ -285,7 +301,7 @@ namespace Unitec.Middleware.Devices
             {
                 if(DevicePort.Read(message, 0, message.Count()) > 0)
                 {
-                    String.Format("Received response {0}", message).Log(LogFile);
+                    this.Log(String.Format("Received response {0}", BitConverter.ToString(message)));
                     if (message[0] != (int) ResponseStatus.ACK)
                     {
                         throw new InvalidOperationException(String.Format("ACK wasn't received", BitConverter.ToString(message)));
@@ -299,7 +315,7 @@ namespace Unitec.Middleware.Devices
 
         protected void WriteCommand(byte[] command)
         {
-            String.Format("Sending command {0}", command).Log(LogFile);
+            this.Log(String.Format("Sending command {0}", BitConverter.ToString(command)));
             if (command != null)
             {
                 DevicePort.Write(command, 0, command.Count());
@@ -334,14 +350,14 @@ namespace Unitec.Middleware.Devices
         protected void HandleErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
             var ex = new Exception(String.Format("Internal Error Code {0}", e.EventType));
-            var eventArgs = ex.Create(DeviceErrorType.ErrorReceving, LogFile);
+            var eventArgs = this.Create(ex,DeviceErrorType.ErrorReceving);
             OnDeviceErrorOccurred(eventArgs);
             errorReceived.Set();
         }
 
         public void Dispose()
         {
-            
+            currentStatus = DeviceStatus.Disposed.SetDeviceStatus(currentStatus);
         }
         #endregion
     }

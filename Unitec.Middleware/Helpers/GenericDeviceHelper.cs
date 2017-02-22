@@ -7,11 +7,13 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unitec.Middleware.Devices;
 
 namespace Unitec.Middleware.Helpers
 {
 
     public delegate void DeviceErrorEventHandler(object sender, DeviceErrorEventArgs e);
+    public delegate void DataLoggedEventHandler(object sender, LogEventArgs e);
 
 
     public enum ReadStatus
@@ -31,12 +33,13 @@ namespace Unitec.Middleware.Helpers
 
     public enum DeviceStatus
     {
-        NotInitialized,
-        Initialized,
-        Enabled,
-        Disabled,
-        Connected,
-        Disconnected
+        Disposed = 0,
+        NotInitialized = 1,
+        Initialized = 2,
+        Enabled = 4,
+        Disabled = 8,
+        Connected = 16,
+        Disconnected = 32
     }
 
     public class DeviceError
@@ -102,10 +105,33 @@ namespace Unitec.Middleware.Helpers
         public List<DeviceError> DeviceErrors { get; set; }
     }
 
+
+    public class LogEventArgs : EventArgs
+    {
+        public string Data { get; set; }
+    }
+
     public static class GenericDeviceHelper
     {
 
-        public static DeviceErrorEventArgs Create(this Exception e, DeviceErrorType error, string logPath)
+        public static int SetDeviceStatus(this DeviceStatus newstatus, int status, bool remove = false)
+        {
+            if (remove)
+            {
+                status = (status & ((int)newstatus ^ 0xFF));
+            }
+            else
+            {
+                status = (status | (int)newstatus);
+            }
+            return status;
+        }
+        public static bool CheckDeviceStatus(this DeviceStatus expectedStatus, int status)
+        {
+            return (status & (int)expectedStatus) == (int)expectedStatus;
+        }
+
+        public static DeviceErrorEventArgs Create(this GenericDevice device, Exception e, DeviceErrorType error)
         {
             var deviceEventArg = new DeviceErrorEventArgs();
             deviceEventArg.DeviceErrors = new List<DeviceError>();
@@ -115,35 +141,42 @@ namespace Unitec.Middleware.Helpers
                 deviceEventArg.DeviceErrors.Add(new DeviceError { Code = e.HResult, Description = String.Format("Source: {0} Message: {1}", e.Source, e.Message) });
                 e = e.InnerException;
             }
-            deviceEventArg.DeviceErrors.Log(logPath);
+            device.Log(deviceEventArg.DeviceErrors);
             return deviceEventArg;
         }
 
-        public static void Log(this List<DeviceError> errors, string filePath)
+        public static void Log(this GenericDevice device, List<DeviceError> errors)
         {
             if (errors != null && errors.Count > 0)
             {
                 errors.ForEach(x =>
                 {
                     var exDetails = String.Format("Exceptin Code {0} Description {1}", x.Code, x.Description);
-                    exDetails.Log(filePath, LogType.Error);
+                    device.Log(exDetails, LogType.Error);
                 });
             }
         }
 
 
-        public static void Log(this Exception e, string filePath)
+        public static void Log(this GenericDevice device, Exception e)
         {
             var exDetails = String.Format("Exceptin {0} at Trace {1}", e.Message, e.StackTrace);
-            exDetails.Log(filePath, LogType.Error);
+            device.Log(exDetails, LogType.Error);
         }
 
-        public static void Log(this string logMessage, string filePath, LogType logType = LogType.Status)
+        public static void Log(this GenericDevice device, string logMessage, LogType logType = LogType.Status)
         {
-            using (StreamWriter w = File.AppendText(filePath))
+            if (device == null || String.IsNullOrEmpty(device.LogFile))
+                return;
+            using (StreamWriter w = File.AppendText(device.LogFile))
             {
                 w.Write("\r\nLog Entry : ");
-                w.WriteLine("{0} {1} : {2}:{3}", DateTime.Now.ToLongTimeString(), DateTime.Now.ToLongDateString(), logType.ToString(), logMessage);
+                var log = String.Format("{0} {1} : {2}:{3}", DateTime.Now.ToLongTimeString(), DateTime.Now.ToLongDateString(), logType.ToString(), logMessage);
+                w.WriteLine(log);
+                if(device != null)
+                {
+                    device.OnDataLogged(new LogEventArgs { Data = log });
+                }
             }
         }
 

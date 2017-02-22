@@ -34,6 +34,13 @@ namespace Unitec
             cardReader.CardInserted += CardReader_CardInserted;
             cardReader.CardInsertTimeout += CardReader_CardInsertTimeout;
             cardReader.CardReadFailure += CardReader_CardReadFailure;
+            cardReader.DataLogged += CardReader_DataLogged;
+        }
+
+        private void CardReader_DataLogged(object sender, LogEventArgs e)
+        {
+            txtLog.AppendText(e.Data);
+            txtLog.AppendText("\r\n");
         }
 
         private void CardReader_CardReadFailure(object sender, DeviceErrorEventArgs e)
@@ -41,7 +48,7 @@ namespace Unitec
             txtResult.AppendText("Could not read the card");
             foreach (var err in e.DeviceErrors)
             {
-                txtLog.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code, err.Description));
+                txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code, err.Description));
             }
         }
 
@@ -77,7 +84,7 @@ namespace Unitec
         {
             foreach (var err in e.DeviceErrors)
             {
-                txtLog.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
+                txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
             }
         }
 
@@ -88,7 +95,15 @@ namespace Unitec
 
         private void btnCheckHealth_Click(object sender, EventArgs e)
         {
-
+            int code;
+            string status;
+            string hardwareIdentity;
+            string report;
+            var res = cardReader.CheckHealth(out code,out status,out hardwareIdentity,out report);
+            txtResult.Text = res.ToString();
+            txtResult.AppendText(String.Format("Code {0} : Status {1} \r\n", code, status));
+            txtResult.AppendText(String.Format("HardwareIdentity : \r\n {0}", hardwareIdentity));
+            txtResult.AppendText(String.Format("Report : \r\n {0}", report));
         }
 
         private void btnRunDiagnostic_Click(object sender, EventArgs e)
@@ -96,7 +111,18 @@ namespace Unitec
             List<string> symptomsCodes = null;
             string deviceInfo = "";
            var res = cardReader.RunDiagnosticTests(out symptomsCodes, out deviceInfo);
+
            txtResult.AppendText(res.ToString());
+           txtResult.AppendText(String.Format("Device Info : \r\n {0}", deviceInfo));
+           txtResult.AppendText(String.Format("Symptom Codes : \r\n"));
+            if(symptomsCodes != null && symptomsCodes.Count > 0)
+            {
+                symptomsCodes.ForEach(x =>
+                {
+                    txtResult.AppendText(String.Format("{0} r\n ",x));
+                });
+            }
+
         }
 
         private void btnTerminate_Click(object sender, EventArgs e)
@@ -119,6 +145,11 @@ namespace Unitec
             txtResult.Text = res.ToString();
         }
 
+        private void btnDisconnect_Click(object sender, EventArgs e)
+        {
+            var res = cardReader.DisconnectFromDevice();
+            txtResult.Text = res.ToString();
+        }
         private void btnEnable_Click(object sender, EventArgs e)
         {
             var res = cardReader.EnableDevice();
@@ -156,5 +187,6 @@ namespace Unitec
         {
 
         }
+
     }
 }

@@ -48,6 +48,7 @@
             this.btnCardInserted = new System.Windows.Forms.Button();
             this.btnInsertTimeout = new System.Windows.Forms.Button();
             this.btnCardFailure = new System.Windows.Forms.Button();
+            this.btnDisconnect = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // txtConfigFilePath
@@ -236,11 +237,22 @@
             this.btnCardFailure.UseVisualStyleBackColor = true;
             this.btnCardFailure.Click += new System.EventHandler(this.btnCardFailure_Click);
             // 
+            // btnDisconnect
+            // 
+            this.btnDisconnect.Location = new System.Drawing.Point(185, 180);
+            this.btnDisconnect.Name = "btnDisconnect";
+            this.btnDisconnect.Size = new System.Drawing.Size(149, 70);
+            this.btnDisconnect.TabIndex = 20;
+            this.btnDisconnect.Text = "Disconnect";
+            this.btnDisconnect.UseVisualStyleBackColor = true;
+            this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
+            // 
             // CreditCardTestHarness
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(973, 393);
+            this.Controls.Add(this.btnDisconnect);
             this.Controls.Add(this.btnCardFailure);
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.label4);
@@ -290,6 +302,7 @@
         private System.Windows.Forms.Button btnCardInserted;
         private System.Windows.Forms.Button btnInsertTimeout;
         private System.Windows.Forms.Button btnCardFailure;
+        private System.Windows.Forms.Button btnDisconnect;
     }
 }
 

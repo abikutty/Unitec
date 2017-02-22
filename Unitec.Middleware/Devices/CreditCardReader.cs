@@ -12,7 +12,7 @@ using Unitec.Middleware.Helpers;
 
 namespace Unitec.Middleware.Devices
 {
-    public class CreditCardReader : GenericDevice, ICreditCardReader, IDisposable
+    public class CreditCardReader : GenericDevice, ICreditCardReader
     {
 
         #region Properties
@@ -108,12 +108,12 @@ namespace Unitec.Middleware.Devices
             bool isEnabled = IsEnabled;
             try
             {
-                "Attempting to Reset Device...".Log(LogFile);
+                this.Log("Attempting to Reset Device...");
                 WriteCommand(CmdResetDefault);
                 var message = ReadResponse();
                 if (message[3] == 0x90 && message[4] == 0x00)
                 {
-                    "Successfully Reset the Device...".Log(LogFile);
+                    this.Log("Successfully Reset the Device...");
                     return true;
                 }
                
@@ -138,15 +138,15 @@ namespace Unitec.Middleware.Devices
             report = "";
             try
             {
-                "Attempting to check device health...".Log(LogFile);
+                this.Log("Attempting to check device health...");
                 if(!IsConnected)
                 {
-                    "Device not connected to check health...".Log(LogFile);
+                    this.Log("Device not connected to check health...");
                     return false;
                 }
                 if (!IsEnabled)
                 {
-                    "Device not enabled to check health...".Log(LogFile);
+                    this.Log("Device not enabled to check health...");
                     return false;
                 }
                 GetReaderStatus(out code, out status);
@@ -165,13 +165,13 @@ namespace Unitec.Middleware.Devices
 
         private string GetReaderIndentity()
         {
-            "Attempting to read hardware information...".Log(LogFile);
+            this.Log("Attempting to read hardware information...");
             WriteCommand(CmdGetFirmwareVer);
             var message = ReadResponse();
             var length = message[2] - message[1];
             if(length <= 0)
             {
-                "failed to read hardware information...".Log(LogFile);
+                this.Log("failed to read hardware information...");
                 return "";
             }
             var response = BitConverter.ToString(message, 3, length);
@@ -209,17 +209,17 @@ namespace Unitec.Middleware.Devices
         {
             try
             {
-                "Attempting to Reset Device...".Log(LogFile);
+                this.Log("Attempting to Reset Device...");
                 if(!IsDisconnected)
                 {
-                    "Device is not disconnected".Log(LogFile);
+                    this.Log("Device is not disconnected");
                     return false;
                 }
                 WriteCommand(CmdResetReader);
                 var message = ReadResponse();
                 if (message[3] == 0x90 && message[4] == 0x00)
                 {
-                    "Successfully Reset the Device...".Log(LogFile);
+                    this.Log("Successfully Reset the Device...");
                     DeviceContainer.DisposeDevice(this);
                     return true;
                 }
@@ -242,15 +242,15 @@ namespace Unitec.Middleware.Devices
             deviceInfo = "";
             try
             {
-                "Attempting to run diagnostic...".Log(LogFile);
+                this.Log("Attempting to run diagnostic...");
                 if (!IsConnected)
                 {
-                    "Device not connected to run diagnostic...".Log(LogFile);
+                    this.Log("Device not connected to run diagnostic...");
                     return false;
                 }
                 if (!IsEnabled)
                 {
-                    "Device not enabled to run diagnostic..".Log(LogFile);
+                    this.Log("Device not enabled to run diagnostic..");
                     return false;
                 }
                 var info = GetReaderDeviceInformation();
@@ -317,7 +317,7 @@ namespace Unitec.Middleware.Devices
 
         private bool RunSettingCommand(string commandName, byte[] command, byte commandID,int cmdOffset, int lrcOffset)
         {
-            String.Format("Attempting to set {0}...", commandName).Log(LogFile);
+            this.Log(String.Format("Attempting to set {0}...", commandName));
             command[cmdOffset] =  (byte) (command[2] & commandID);
             byte lrc = 0x00;
             for(int i=0; i< lrcOffset; i++)
@@ -329,25 +329,25 @@ namespace Unitec.Middleware.Devices
             var response = ReadResponse();
             if (response[3] == 0x90 && response[4] == 0x00)
             {
-                String.Format("Successfully executed {0}", commandName).Log(LogFile);
+                this.Log(String.Format("Successfully executed {0}", commandName));
                 return true;
             }
             else
             {
-                String.Format("Failed running {0}", commandName).Log(LogFile);
+                this.Log(String.Format("Failed running {0}", commandName));
             }
             return false;
         }
 
         private string GetReaderDeviceInformation()
         {
-            "Attempting to read device information...".Log(LogFile);
+            this.Log("Attempting to read device information...");
             WriteCommand(CmdReadAllConfig);
             var message = ReadResponse();
             var length = message[2] - message[1];
             if (length <= 0)
             {
-                "Failed to read device information...".Log(LogFile);
+                this.Log("Failed to read device information...");
                 return "";
             }
             var response = BitConverter.ToString(message, 3, length);
@@ -364,7 +364,7 @@ namespace Unitec.Middleware.Devices
             CardDataObtainedEventHandler handler = CardDataObtained;
             if (handler != null)
             {
-                "credit card data obtained".Log(LogFile);
+                this.Log("credit card data obtained");
                 handler(this, e);
             }
         }
@@ -373,7 +373,7 @@ namespace Unitec.Middleware.Devices
             EventHandler handler = CardInserted;
             if (handler != null)
             {
-                "credit card inserted".Log(LogFile);
+                this.Log("credit card inserted");
                 handler(this, e);
             }
         }
@@ -382,7 +382,7 @@ namespace Unitec.Middleware.Devices
             EventHandler handler = CardInsertTimeout;
             if (handler != null)
             {
-                "credit card insert timeout".Log(LogFile);
+                this.Log("credit card insert timeout");
                 handler(this, e);
             }
         }
@@ -391,7 +391,7 @@ namespace Unitec.Middleware.Devices
             DeviceErrorEventHandler handler = CardReadFailure;
             if (handler != null)
             {
-                "credit card read failed".Log(LogFile);
+                this.Log("credit card read failed");
                 handler(this, e);
             }
         }

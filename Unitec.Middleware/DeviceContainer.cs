@@ -26,7 +26,6 @@ namespace Unitec.Middleware
         public static void DisposeDevice(IGenericDevice device)
         {
             container.Release(device);
-            device = null;
         }
     }
 }

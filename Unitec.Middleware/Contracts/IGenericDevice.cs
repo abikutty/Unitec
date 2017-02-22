@@ -22,6 +22,7 @@ namespace Unitec.Middleware.Contracts
         event DeviceErrorEventHandler DeviceErrorOccurred;
         event EventHandler DeviceConnected;
         event EventHandler DeviceDisconnected;
+        event DataLoggedEventHandler DataLogged;
         #endregion
         bool InitializeDevice();
         bool ConnectToDevice();

@@ -50,8 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeviceContainer.cs" />
-    <Compile Include="Helpers\CreditCardDeviceHelper.cs" />
-    <Compile Include="Helpers\GenericDeviceHelper.cs" />
+    <Compile Include="Extensions\CreditCardDeviceExtension.cs" />
+    <Compile Include="Extensions\GenericDeviceExtension.cs" />
     <Compile Include="Contracts\ICredirCardReader.cs" />
     <Compile Include="Contracts\IGenericDevice.cs" />
     <Compile Include="Devices\CreditCardReader.cs" />

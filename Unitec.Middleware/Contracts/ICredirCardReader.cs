@@ -13,5 +13,7 @@ namespace Unitec.Middleware.Contracts
         event EventHandler CardInserted;
         event EventHandler CardInsertTimeout;
         event DeviceErrorEventHandler CardReadFailure;
+        //Added to wait for card events in a separate thread
+        Task SetReaderReady();
     }
 }

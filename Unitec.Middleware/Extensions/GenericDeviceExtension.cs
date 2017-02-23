@@ -114,9 +114,9 @@ namespace Unitec.Middleware.Helpers
     public static class GenericDeviceHelper
     {
 
-        public static int SetDeviceStatus(this DeviceStatus newstatus, int status, bool remove = false)
+        public static int SetDeviceStatus(this DeviceStatus newstatus, int status, bool add = true)
         {
-            if (remove)
+            if (!add)
             {
                 status = (status & ((int)newstatus ^ 0xFF));
             }

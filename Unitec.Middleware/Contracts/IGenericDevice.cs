@@ -22,6 +22,7 @@ namespace Unitec.Middleware.Contracts
         event DeviceErrorEventHandler DeviceErrorOccurred;
         event EventHandler DeviceConnected;
         event EventHandler DeviceDisconnected;
+        //Added to see the logs in the Test harness
         event DataLoggedEventHandler DataLogged;
         #endregion
         bool InitializeDevice();

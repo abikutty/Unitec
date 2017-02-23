@@ -92,6 +92,10 @@ namespace Unitec.Middleware.Devices
             {
                 return firmwareVersion;
             }
+            protected set
+            {
+                firmwareVersion = value;
+            }
         }
 
         #endregion
@@ -116,7 +120,7 @@ namespace Unitec.Middleware.Devices
                 DevicePort = new SerialPort(conn.ComPort, conn.BaudRate,
                                                  conn.Parity, conn.DataBits, conn.StopBits);
                 currentStatus = DeviceStatus.Initialized.SetDeviceStatus(currentStatus);
-                currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus,true);
+                currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus,false);
                 this.Log("Successfully Initialized the Device...");
             }
             catch
@@ -141,7 +145,7 @@ namespace Unitec.Middleware.Devices
                     DevicePort.ErrorReceived += HandleErrorReceived;
                 }
                 currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus);
-                currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, true);
+                currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, false);
                 OnDeviceConnected(new EventArgs());
                 this.Log("Successfully Connected to Device...");
             }
@@ -163,7 +167,7 @@ namespace Unitec.Middleware.Devices
                     DevicePort.Close();
                 }
                 currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus);
-                currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, true);
+                currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, false);
                 OnDeviceDisconnected(new EventArgs());
                 this.Log("Successfully Disconnected the Device...");
             }
@@ -190,7 +194,7 @@ namespace Unitec.Middleware.Devices
                 }
                 DevicePort.DtrEnable = true;
                 currentStatus = DeviceStatus.Enabled.SetDeviceStatus(currentStatus);
-                currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus, true);
+                currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus, false);
                 this.Log("Successfully Enabled the Device...");
             }
             catch
@@ -210,7 +214,7 @@ namespace Unitec.Middleware.Devices
                 {
                     DevicePort.DtrEnable = false;
                     currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus);
-                    currentStatus = DeviceStatus.Enabled.SetDeviceStatus(currentStatus, true);
+                    currentStatus = DeviceStatus.Enabled.SetDeviceStatus(currentStatus, false);
                 }
                 this.Log("Successfully Disabled the Device...");
             }
@@ -248,7 +252,7 @@ namespace Unitec.Middleware.Devices
         protected virtual void OnDeviceConnected(EventArgs e)
         {
             currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus);
-            currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, true);
+            currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus, false);
             EventHandler handler = DeviceConnected;
             if (handler != null)
             {
@@ -261,7 +265,7 @@ namespace Unitec.Middleware.Devices
         protected virtual void OnDeviceDisconnected(EventArgs e)
         {
             currentStatus = DeviceStatus.Disconnected.SetDeviceStatus(currentStatus);
-            currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, true);
+            currentStatus = DeviceStatus.Connected.SetDeviceStatus(currentStatus, false);
             EventHandler handler = DeviceDisconnected;
             if (handler != null)
             {
@@ -278,7 +282,7 @@ namespace Unitec.Middleware.Devices
 
         #endregion
 
-        #region Misc. Methods
+        #region Helper Methods
         protected virtual void HandleException(Exception ex, DeviceErrorType error)
         {
             if (ex != null)
@@ -309,6 +313,7 @@ namespace Unitec.Middleware.Devices
                     return message;
                 }
             }
+            this.Log("Read timeout...");
             throw new InvalidOperationException("Read timeout...");
         }
 
@@ -357,7 +362,7 @@ namespace Unitec.Middleware.Devices
 
         public void Dispose()
         {
-            currentStatus = DeviceStatus.Disposed.SetDeviceStatus(currentStatus);
+            currentStatus = 0;
         }
         #endregion
     }

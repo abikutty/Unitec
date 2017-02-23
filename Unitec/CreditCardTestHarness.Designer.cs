@@ -39,16 +39,15 @@
             this.btnInitialize = new System.Windows.Forms.Button();
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnEnable = new System.Windows.Forms.Button();
-            this.btnDisable = new System.Windows.Forms.Button();
-            this.btnReset = new System.Windows.Forms.Button();
             this.btnCheckHealth = new System.Windows.Forms.Button();
             this.btnRunDiagnostic = new System.Windows.Forms.Button();
-            this.btnTerminate = new System.Windows.Forms.Button();
-            this.btnCardData = new System.Windows.Forms.Button();
-            this.btnCardInserted = new System.Windows.Forms.Button();
-            this.btnInsertTimeout = new System.Windows.Forms.Button();
-            this.btnCardFailure = new System.Windows.Forms.Button();
+            this.btnCardReady = new System.Windows.Forms.Button();
             this.btnDisconnect = new System.Windows.Forms.Button();
+            this.btnDisable = new System.Windows.Forms.Button();
+            this.btnReset = new System.Windows.Forms.Button();
+            this.btnTerminate = new System.Windows.Forms.Button();
+            this.btnNewInstance = new System.Windows.Forms.Button();
+            this.btnClear = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // txtConfigFilePath
@@ -105,7 +104,7 @@
             this.txtLog.Location = new System.Drawing.Point(87, 267);
             this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
-            this.txtLog.Size = new System.Drawing.Size(874, 115);
+            this.txtLog.Size = new System.Drawing.Size(868, 115);
             this.txtLog.TabIndex = 18;
             // 
             // label4
@@ -119,7 +118,7 @@
             // 
             // btnInitialize
             // 
-            this.btnInitialize.Location = new System.Drawing.Point(340, 24);
+            this.btnInitialize.Location = new System.Drawing.Point(340, 27);
             this.btnInitialize.Name = "btnInitialize";
             this.btnInitialize.Size = new System.Drawing.Size(149, 70);
             this.btnInitialize.TabIndex = 1;
@@ -129,7 +128,7 @@
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(340, 180);
+            this.btnConnect.Location = new System.Drawing.Point(340, 178);
             this.btnConnect.Name = "btnConnect";
             this.btnConnect.Size = new System.Drawing.Size(149, 70);
             this.btnConnect.TabIndex = 2;
@@ -147,29 +146,9 @@
             this.btnEnable.UseVisualStyleBackColor = true;
             this.btnEnable.Click += new System.EventHandler(this.btnEnable_Click);
             // 
-            // btnDisable
-            // 
-            this.btnDisable.Location = new System.Drawing.Point(499, 180);
-            this.btnDisable.Name = "btnDisable";
-            this.btnDisable.Size = new System.Drawing.Size(149, 70);
-            this.btnDisable.TabIndex = 4;
-            this.btnDisable.Text = "Disable";
-            this.btnDisable.UseVisualStyleBackColor = true;
-            this.btnDisable.Click += new System.EventHandler(this.btnDisable_Click);
-            // 
-            // btnReset
-            // 
-            this.btnReset.Location = new System.Drawing.Point(499, 100);
-            this.btnReset.Name = "btnReset";
-            this.btnReset.Size = new System.Drawing.Size(149, 70);
-            this.btnReset.TabIndex = 5;
-            this.btnReset.Text = "Reset";
-            this.btnReset.UseVisualStyleBackColor = true;
-            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
-            // 
             // btnCheckHealth
             // 
-            this.btnCheckHealth.Location = new System.Drawing.Point(820, 24);
+            this.btnCheckHealth.Location = new System.Drawing.Point(806, 100);
             this.btnCheckHealth.Name = "btnCheckHealth";
             this.btnCheckHealth.Size = new System.Drawing.Size(149, 70);
             this.btnCheckHealth.TabIndex = 7;
@@ -179,7 +158,7 @@
             // 
             // btnRunDiagnostic
             // 
-            this.btnRunDiagnostic.Location = new System.Drawing.Point(820, 104);
+            this.btnRunDiagnostic.Location = new System.Drawing.Point(806, 178);
             this.btnRunDiagnostic.Name = "btnRunDiagnostic";
             this.btnRunDiagnostic.Size = new System.Drawing.Size(149, 70);
             this.btnRunDiagnostic.TabIndex = 8;
@@ -187,59 +166,19 @@
             this.btnRunDiagnostic.UseVisualStyleBackColor = true;
             this.btnRunDiagnostic.Click += new System.EventHandler(this.btnRunDiagnostic_Click);
             // 
-            // btnTerminate
+            // btnCardReady
             // 
-            this.btnTerminate.Location = new System.Drawing.Point(499, 24);
-            this.btnTerminate.Name = "btnTerminate";
-            this.btnTerminate.Size = new System.Drawing.Size(149, 70);
-            this.btnTerminate.TabIndex = 9;
-            this.btnTerminate.Text = "Terminate";
-            this.btnTerminate.UseVisualStyleBackColor = true;
-            this.btnTerminate.Click += new System.EventHandler(this.btnTerminate_Click);
-            // 
-            // btnCardData
-            // 
-            this.btnCardData.Location = new System.Drawing.Point(820, 180);
-            this.btnCardData.Name = "btnCardData";
-            this.btnCardData.Size = new System.Drawing.Size(149, 70);
-            this.btnCardData.TabIndex = 14;
-            this.btnCardData.Text = "Card Data Obtained";
-            this.btnCardData.UseVisualStyleBackColor = true;
-            this.btnCardData.Click += new System.EventHandler(this.btnCardData_Click);
-            // 
-            // btnCardInserted
-            // 
-            this.btnCardInserted.Location = new System.Drawing.Point(661, 180);
-            this.btnCardInserted.Name = "btnCardInserted";
-            this.btnCardInserted.Size = new System.Drawing.Size(149, 70);
-            this.btnCardInserted.TabIndex = 15;
-            this.btnCardInserted.Text = "Card Inserted";
-            this.btnCardInserted.UseVisualStyleBackColor = true;
-            this.btnCardInserted.Click += new System.EventHandler(this.btnCardInserted_Click);
-            // 
-            // btnInsertTimeout
-            // 
-            this.btnInsertTimeout.Location = new System.Drawing.Point(661, 100);
-            this.btnInsertTimeout.Name = "btnInsertTimeout";
-            this.btnInsertTimeout.Size = new System.Drawing.Size(149, 70);
-            this.btnInsertTimeout.TabIndex = 16;
-            this.btnInsertTimeout.Text = "Card Insert Timeout";
-            this.btnInsertTimeout.UseVisualStyleBackColor = true;
-            this.btnInsertTimeout.Click += new System.EventHandler(this.btnInsertTimeout_Click);
-            // 
-            // btnCardFailure
-            // 
-            this.btnCardFailure.Location = new System.Drawing.Point(661, 24);
-            this.btnCardFailure.Name = "btnCardFailure";
-            this.btnCardFailure.Size = new System.Drawing.Size(149, 70);
-            this.btnCardFailure.TabIndex = 19;
-            this.btnCardFailure.Text = "Card Read Failure";
-            this.btnCardFailure.UseVisualStyleBackColor = true;
-            this.btnCardFailure.Click += new System.EventHandler(this.btnCardFailure_Click);
+            this.btnCardReady.Location = new System.Drawing.Point(806, 27);
+            this.btnCardReady.Name = "btnCardReady";
+            this.btnCardReady.Size = new System.Drawing.Size(149, 70);
+            this.btnCardReady.TabIndex = 19;
+            this.btnCardReady.Text = "Card Ready";
+            this.btnCardReady.UseVisualStyleBackColor = true;
+            this.btnCardReady.Click += new System.EventHandler(this.btnCardReady_Click);
             // 
             // btnDisconnect
             // 
-            this.btnDisconnect.Location = new System.Drawing.Point(185, 180);
+            this.btnDisconnect.Location = new System.Drawing.Point(495, 103);
             this.btnDisconnect.Name = "btnDisconnect";
             this.btnDisconnect.Size = new System.Drawing.Size(149, 70);
             this.btnDisconnect.TabIndex = 20;
@@ -247,18 +186,67 @@
             this.btnDisconnect.UseVisualStyleBackColor = true;
             this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
             // 
+            // btnDisable
+            // 
+            this.btnDisable.Location = new System.Drawing.Point(495, 178);
+            this.btnDisable.Name = "btnDisable";
+            this.btnDisable.Size = new System.Drawing.Size(149, 70);
+            this.btnDisable.TabIndex = 4;
+            this.btnDisable.Text = "Disable";
+            this.btnDisable.UseVisualStyleBackColor = true;
+            this.btnDisable.Click += new System.EventHandler(this.btnDisable_Click);
+            // 
+            // btnReset
+            // 
+            this.btnReset.Location = new System.Drawing.Point(651, 103);
+            this.btnReset.Name = "btnReset";
+            this.btnReset.Size = new System.Drawing.Size(149, 70);
+            this.btnReset.TabIndex = 5;
+            this.btnReset.Text = "Reset";
+            this.btnReset.UseVisualStyleBackColor = true;
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
+            // 
+            // btnTerminate
+            // 
+            this.btnTerminate.Location = new System.Drawing.Point(651, 27);
+            this.btnTerminate.Name = "btnTerminate";
+            this.btnTerminate.Size = new System.Drawing.Size(149, 70);
+            this.btnTerminate.TabIndex = 9;
+            this.btnTerminate.Text = "Terminate";
+            this.btnTerminate.UseVisualStyleBackColor = true;
+            this.btnTerminate.Click += new System.EventHandler(this.btnTerminate_Click);
+            // 
+            // btnNewInstance
+            // 
+            this.btnNewInstance.Location = new System.Drawing.Point(495, 27);
+            this.btnNewInstance.Name = "btnNewInstance";
+            this.btnNewInstance.Size = new System.Drawing.Size(149, 70);
+            this.btnNewInstance.TabIndex = 22;
+            this.btnNewInstance.Text = "New Instance";
+            this.btnNewInstance.UseVisualStyleBackColor = true;
+            this.btnNewInstance.Click += new System.EventHandler(this.btnNewInstance_Click);
+            // 
+            // btnClear
+            // 
+            this.btnClear.Location = new System.Drawing.Point(651, 178);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(149, 70);
+            this.btnClear.TabIndex = 21;
+            this.btnClear.Text = "Clear Log/Result";
+            this.btnClear.UseVisualStyleBackColor = true;
+            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
+            // 
             // CreditCardTestHarness
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(973, 393);
+            this.ClientSize = new System.Drawing.Size(971, 414);
+            this.Controls.Add(this.btnNewInstance);
+            this.Controls.Add(this.btnClear);
             this.Controls.Add(this.btnDisconnect);
-            this.Controls.Add(this.btnCardFailure);
+            this.Controls.Add(this.btnCardReady);
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.btnInsertTimeout);
-            this.Controls.Add(this.btnCardInserted);
-            this.Controls.Add(this.btnCardData);
             this.Controls.Add(this.txtResult);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
@@ -293,16 +281,15 @@
         private System.Windows.Forms.Button btnInitialize;
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.Button btnEnable;
-        private System.Windows.Forms.Button btnDisable;
-        private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnCheckHealth;
         private System.Windows.Forms.Button btnRunDiagnostic;
-        private System.Windows.Forms.Button btnTerminate;
-        private System.Windows.Forms.Button btnCardData;
-        private System.Windows.Forms.Button btnCardInserted;
-        private System.Windows.Forms.Button btnInsertTimeout;
-        private System.Windows.Forms.Button btnCardFailure;
+        private System.Windows.Forms.Button btnCardReady;
         private System.Windows.Forms.Button btnDisconnect;
+        private System.Windows.Forms.Button btnDisable;
+        private System.Windows.Forms.Button btnReset;
+        private System.Windows.Forms.Button btnTerminate;
+        private System.Windows.Forms.Button btnNewInstance;
+        private System.Windows.Forms.Button btnClear;
     }
 }
 

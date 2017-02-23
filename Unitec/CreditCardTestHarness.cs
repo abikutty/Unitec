@@ -17,56 +17,43 @@ using Unitec.Middleware.Helpers;
 namespace Unitec
 {
     public partial class CreditCardTestHarness : Form
-    {   
+    {
+        delegate void SetTextCallback(string text);
         private ICreditCardReader cardReader;
         delegate void StringArgReturningVoidDelegate(string text);
         public CreditCardTestHarness()
         {
             InitializeComponent();
-            cardReader =  DeviceContainer.GetDevice<ICreditCardReader>();
-
             txtLogFilePath.Text = "C:\\Unitec\\Log\\Unitec.Middleware.log";
             txtConfigFilePath.Text = "..\\..\\CreditCardReader.config";
-            cardReader.DeviceErrorOccurred += CardReader_DeviceErrorOccurred;
-            cardReader.DeviceConnected += CardReader_DeviceConnected;
-            cardReader.DeviceDisconnected += CardReader_DeviceDisconnected;
-            cardReader.CardDataObtained += CardReader_CardDataObtained;
-            cardReader.CardInserted += CardReader_CardInserted;
-            cardReader.CardInsertTimeout += CardReader_CardInsertTimeout;
-            cardReader.CardReadFailure += CardReader_CardReadFailure;
-            cardReader.DataLogged += CardReader_DataLogged;
+            CreateNewCardReaderDevice();
         }
 
-        private void CardReader_DataLogged(object sender, LogEventArgs e)
-        {
-            txtLog.AppendText(e.Data);
-            txtLog.AppendText("\r\n");
-        }
-
+        #region Events
         private void CardReader_CardReadFailure(object sender, DeviceErrorEventArgs e)
         {
-            txtResult.AppendText("Could not read the card");
+            SetText("Could not read the card:\r\n");
             foreach (var err in e.DeviceErrors)
             {
-                txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code, err.Description));
+                SetText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code, err.Description));
             }
         }
 
         private void CardReader_CardInsertTimeout(object sender, EventArgs e)
         {
-            txtResult.Text = "Card reader timeout";
+            SetText("Card reader timeout");
         }
 
         private void CardReader_CardInserted(object sender, EventArgs e)
         {
-            txtResult.Text = "Card Inserted";
+            SetText("Card Inserted");
         }
 
         private void CardReader_CardDataObtained(object sender, CardDataObtainedEventArgs e)
         {
-            txtResult.AppendText(e.Track1Data);
-            txtResult.AppendText(e.Track2Data);
-            txtResult.AppendText(e.Track3Data);
+            SetText(e.Track1Data);
+            SetText(e.Track2Data);
+            SetText(e.Track3Data);
 
         }
 
@@ -86,6 +73,28 @@ namespace Unitec
             {
                 txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
             }
+        }
+
+        private void CardReader_DataLogged(object sender, LogEventArgs e)
+        {
+            SetLogText(e.Data);
+            SetLogText("\r\n");
+        }
+        #endregion
+
+        #region Methods
+
+        private void CreateNewCardReaderDevice()
+        {
+            cardReader = DeviceContainer.GetDevice<ICreditCardReader>();
+            cardReader.DeviceErrorOccurred += CardReader_DeviceErrorOccurred;
+            cardReader.DeviceConnected += CardReader_DeviceConnected;
+            cardReader.DeviceDisconnected += CardReader_DeviceDisconnected;
+            cardReader.CardDataObtained += CardReader_CardDataObtained;
+            cardReader.CardInserted += CardReader_CardInserted;
+            cardReader.CardInsertTimeout += CardReader_CardInsertTimeout;
+            cardReader.CardReadFailure += CardReader_CardReadFailure;
+            cardReader.DataLogged += CardReader_DataLogged;
         }
         private void btnCheckHealth_Click(object sender, EventArgs e)
         {
@@ -117,7 +126,7 @@ namespace Unitec
                 });
             }
 
-        }
+       }
 
         private void btnTerminate_Click(object sender, EventArgs e)
         {
@@ -162,25 +171,55 @@ namespace Unitec
             txtResult.Text = res.ToString();
         }
 
-        private void btnCardData_Click(object sender, EventArgs e)
+        private void btnCardReady_Click(object sender, EventArgs e)
         {
-
+            cardReader.SetReaderReady();
         }
 
-        private void btnCardFailure_Click(object sender, EventArgs e)
+
+        private void SetText(string text)
         {
-      
+            // InvokeRequired required compares the thread ID of the
+            // calling thread to the thread ID of the creating thread.
+            // If these threads are different, it returns true.
+            if (this.txtResult.InvokeRequired)
+            {
+                SetTextCallback d = new SetTextCallback(SetText);
+                this.Invoke(d, new object[] { text });
+            }
+            else
+            {
+                this.txtResult.AppendText(text);
+            }
         }
 
-        private void btnInsertTimeout_Click(object sender, EventArgs e)
-        {
 
+        private void SetLogText(string text)
+        {
+            // InvokeRequired required compares the thread ID of the
+            // calling thread to the thread ID of the creating thread.
+            // If these threads are different, it returns true.
+            if (this.txtLog.InvokeRequired)
+            {
+                SetTextCallback d = new SetTextCallback(SetText);
+                this.Invoke(d, new object[] { text });
+            }
+            else
+            {
+                this.txtLog.AppendText(text);
+            }
+        }
+        #endregion
+
+        private void btnNewInstance_Click(object sender, EventArgs e)
+        {
+            CreateNewCardReaderDevice();
         }
 
-        private void btnCardInserted_Click(object sender, EventArgs e)
+        private void btnClear_Click(object sender, EventArgs e)
         {
-            
+            txtLog.Text = "";
+            txtResult.Text = "";
         }
-
     }
 }

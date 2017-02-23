@@ -123,8 +123,9 @@ namespace Unitec.Middleware.Devices
                 currentStatus = DeviceStatus.NotInitialized.SetDeviceStatus(currentStatus,false);
                 this.Log("Successfully Initialized the Device...");
             }
-            catch
+            catch(Exception ex)
             {
+                HandleException(ex, DeviceErrorType.DeviceInitFailed);
                 throw;
             }
             return true;
@@ -149,8 +150,9 @@ namespace Unitec.Middleware.Devices
                 OnDeviceConnected(new EventArgs());
                 this.Log("Successfully Connected to Device...");
             }
-            catch
+            catch (Exception ex)
             {
+                HandleException(ex, DeviceErrorType.ConnectionFailed);
                 throw;
             }
             return true;
@@ -171,8 +173,9 @@ namespace Unitec.Middleware.Devices
                 OnDeviceDisconnected(new EventArgs());
                 this.Log("Successfully Disconnected the Device...");
             }
-            catch
+            catch (Exception ex)
             {
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
                 throw;
             }
             return true;
@@ -197,8 +200,9 @@ namespace Unitec.Middleware.Devices
                 currentStatus = DeviceStatus.Disabled.SetDeviceStatus(currentStatus, false);
                 this.Log("Successfully Enabled the Device...");
             }
-            catch
+            catch (Exception ex)
             {
+                HandleException(ex, DeviceErrorType.NotEnabled);
                 throw;
             }
             return true;
@@ -218,8 +222,9 @@ namespace Unitec.Middleware.Devices
                 }
                 this.Log("Successfully Disabled the Device...");
             }
-            catch
+            catch (Exception ex)
             {
+                HandleException(ex, DeviceErrorType.UnexpectedError);
                 throw;
             }
             return true;
@@ -293,6 +298,11 @@ namespace Unitec.Middleware.Devices
             }
         }
 
+        protected virtual void HandleException(DeviceErrorType error)
+        {
+             var errorArg = this.Create(null,error);
+             OnDeviceErrorOccurred(errorArg);
+        }
 
         protected virtual void WriteLog(Exception ex)
         {
@@ -313,7 +323,7 @@ namespace Unitec.Middleware.Devices
                     return message;
                 }
             }
-            this.Log("Read timeout...");
+            HandleException(DeviceErrorType.ErrorReceving);
             throw new InvalidOperationException("Read timeout...");
         }
 

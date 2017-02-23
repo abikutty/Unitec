@@ -71,7 +71,7 @@ namespace Unitec
         {
             foreach (var err in e.DeviceErrors)
             {
-                txtResult.AppendText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
+                SetText(String.Format("Code: {0}  Desc: {1} \r\n", err.Code,err.Description));
             }
         }
 
@@ -201,7 +201,7 @@ namespace Unitec
             // If these threads are different, it returns true.
             if (this.txtLog.InvokeRequired)
             {
-                SetTextCallback d = new SetTextCallback(SetText);
+                SetTextCallback d = new SetTextCallback(SetLogText);
                 this.Invoke(d, new object[] { text });
             }
             else

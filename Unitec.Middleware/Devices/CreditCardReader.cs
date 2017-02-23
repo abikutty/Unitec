@@ -145,6 +145,37 @@ namespace Unitec.Middleware.Devices
             return false;
         }
 
+        public override bool TerminateDevice()
+        {
+            try
+            {
+                this.Log("Attempting to Reset Device...");
+                if (!IsDisconnected)
+                {
+                    this.Log("Device is not disconnected");
+                    HandleException(DeviceErrorType.ExpectedResponseFailed);
+                    return false;
+                }
+                WriteCommand(CmdResetReader);
+                var message = ReadResponse();
+                if (message[3] == 0x90 && message[4] == 0x00)
+                {
+                    this.Log("Successfully Reset the Device...");
+                    DeviceContainer.DisposeDevice(this);
+                    return true;
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                HandleException(ex, DeviceErrorType.UnableToClosePort);
+                var resp = DisableDevice();
+                resp = resp && DisconnectFromDevice();
+            }
+            return false;
+        }
+
         public override bool CheckHealth(out int code, out string status, out string hardwareIdentity, out string report)
         {
             code = 0;
@@ -156,12 +187,14 @@ namespace Unitec.Middleware.Devices
                 this.Log("Attempting to check device health...");
                 if(!IsConnected)
                 {
+                    HandleException(DeviceErrorType.NotConnected);
                     this.Log("Device not connected to check health...");
                     return false;
                 }
                 if (!IsEnabled)
                 {
                     this.Log("Device not enabled to check health...");
+                    HandleException(DeviceErrorType.NotEnabled);
                     return false;
                 }
                 GetReaderStatus(out code, out status);
@@ -172,7 +205,7 @@ namespace Unitec.Middleware.Devices
             }
             catch (Exception ex)
             {
-                HandleException(ex, DeviceErrorType.UnableToClosePort);
+                HandleException(ex, DeviceErrorType.ExpectedResponseFailed);
             }
             return false;
         }
@@ -188,12 +221,12 @@ namespace Unitec.Middleware.Devices
                 this.Log("Attempting to run diagnostic...");
                 if (!IsConnected)
                 {
-                    this.Log("Device not connected to run diagnostic...");
+                    HandleException(DeviceErrorType.NotConnected);
                     return false;
                 }
                 if (!IsEnabled)
                 {
-                    this.Log("Device not enabled to run diagnostic..");
+                    HandleException(DeviceErrorType.NotEnabled);
                     return false;
                 }
                 var info = GetReaderDeviceInformation();
@@ -253,13 +286,75 @@ namespace Unitec.Middleware.Devices
             }
             catch (Exception ex)
             {
-                HandleException(ex, DeviceErrorType.UnableToClosePort);
+                HandleException(ex, DeviceErrorType.ExpectedResponseFailed);
             }
             return false;
         }
 
 
+        public Task SetReaderReady()
+        {
 
+            return Task.Run(new Action(() =>
+            {
+                try
+                {
+                    this.Log("Attempting set the reader...");
+
+                    if (!IsConnected || !IsEnabled)
+                    {
+                        HandleException(DeviceErrorType.NotEnabled);
+                        return;
+                    }
+                    int code;
+                    string status;
+
+                    if (RunSettingCommandMask("Set reader option 2", CmdReaderOption2Mask, 0X1F, 6, 7))
+                    {
+                        GetReaderStatus(out code, out status);
+                        if ((code & 32) == 1)
+                            OnCardInserted(new EventArgs());
+                        if ((code & 64) == 0)
+                            OnCardInsertTimeout(new EventArgs());
+                    }
+
+                    if (!RunSettingCommandMask("Set Tracks 1,2 and 3", CmdSetTrackSelectionMask, 0X07, 6, 7))
+                    {
+                        this.Log("Failed to set tracks...");
+                        return;
+                    }
+
+                    if (!RunSettingCommandMask("Set to buffered mode", CmdSetTransmitModeMask, 0X02, 6, 7))
+                    {
+                        this.Log("Failed to set buffered mode...");
+                        return;
+                    }
+
+                    if (!RunSettingCommandMask("Set reader direction", CmdSetReadDirectionMask, 0X01, 6, 7))
+                    {
+                        this.Log("Failed to set reader direction...");
+                        return;
+                    }
+                    if (!RunSettingCommandMask("Set MSR Send Option Start/End Sentinel t1/t2 for credit card and t1/t3 for other card, no error", CmdSetSendOptionMask, 0x21, 5, 6))
+                    {
+                        this.Log("Failed to set the read mode...");
+                        return;
+                    }
+
+                    if (!RunSettingCommandMask("Set | as track separator ", CmdSetTrackSeparatorMask, 0XA6, 6, 7))
+                    {
+                        this.Log("Failed to set | as track separator...");
+                        return;
+                    }
+                    AttempToRead();
+                }
+                catch (Exception ex)
+                {
+                    HandleException(ex, DeviceErrorType.ExpectedResponseFailed);
+                }
+
+            }));
+        }
 
 
         #endregion
@@ -359,36 +454,6 @@ namespace Unitec.Middleware.Devices
             }
         }
 
-        public override bool TerminateDevice()
-        {
-            try
-            {
-                this.Log("Attempting to Reset Device...");
-                if (!IsDisconnected)
-                {
-                    this.Log("Device is not disconnected");
-                    return false;
-                }
-                WriteCommand(CmdResetReader);
-                var message = ReadResponse();
-                if (message[3] == 0x90 && message[4] == 0x00)
-                {
-                    this.Log("Successfully Reset the Device...");
-                    DeviceContainer.DisposeDevice(this);
-                    return true;
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-                HandleException(ex, DeviceErrorType.UnableToClosePort);
-                var resp = DisableDevice();
-                resp = resp && DisconnectFromDevice();
-            }
-            return false;
-        }
-
         private bool RunSettingCommandMask(string commandName, byte[] command, byte commandID, int cmdOffset, int lrcOffset)
         {
             this.Log(String.Format("Attempting to set {0}...", commandName));
@@ -408,7 +473,7 @@ namespace Unitec.Middleware.Devices
             }
             else
             {
-                this.Log(String.Format("Failed running {0}", commandName));
+                HandleException(new Exception(String.Format("Failed running {0}", commandName)),DeviceErrorType.ExpectedResponseFailed);
             }
             return false;
         }
@@ -436,7 +501,7 @@ namespace Unitec.Middleware.Devices
             var length = message[2] - message[1];
             if (length <= 0)
             {
-                this.Log("Failed to read device information...");
+                HandleException(DeviceErrorType.ExpectedResponseFailed);
                 return "";
             }
             var response = BitConverter.ToString(message, 3, length);
@@ -447,64 +512,7 @@ namespace Unitec.Middleware.Devices
         {
             return "";
         }
-
-
-        public Task SetReaderReady()
-        {
-
-            return Task.Run(new Action(() =>
-            {
-                this.Log("Attempting set the reader...");
-
-                if (!IsConnected || !IsEnabled)
-                {
-                    this.Log("Reader is not connected and/or enabled...");
-                    return;
-                }
-                int code;
-                string status;
-
-                if (RunSettingCommandMask("Set reader option 2", CmdReaderOption2Mask, 0X1F, 6, 7))
-                {
-                    GetReaderStatus(out code, out status);
-                    if ((code & 32) == 1)
-                        OnCardInserted(new EventArgs());
-                    if ((code & 64) == 0)
-                        OnCardInsertTimeout(new EventArgs());
-                }
-
-                if (!RunSettingCommandMask("Set Tracks 1,2 and 3", CmdSetTrackSelectionMask, 0X07, 6, 7))
-                {
-                    this.Log("Failed to set tracks...");
-                    return;
-                }
-
-                if (!RunSettingCommandMask("Set to buffered mode", CmdSetTransmitModeMask, 0X02, 6, 7))
-                {
-                    this.Log("Failed to set buffered mode...");
-                    return;
-                }
-
-                if (!RunSettingCommandMask("Set reader direction", CmdSetReadDirectionMask, 0X01, 6, 7))
-                {
-                    this.Log("Failed to set reader direction...");
-                    return;
-                }
-                if (!RunSettingCommandMask("Set MSR Send Option Start/End Sentinel t1/t2 for credit card and t1/t3 for other card, no error", CmdSetSendOptionMask, 0x21, 5, 6))
-                {
-                    this.Log("Failed to set the read mode...");
-                    return;
-                }
-
-                if (!RunSettingCommandMask("Set | as track separator ", CmdSetTrackSeparatorMask, 0XA6, 6, 7))
-                {
-                    this.Log("Failed to set | as track separator...");
-                    return;
-                }
-                AttempToRead();
-
-            }));
-        }
+           
 
         private void AttempToRead()
         {
@@ -577,10 +585,32 @@ namespace Unitec.Middleware.Devices
                     return;
                 }
                 var tracks = data.Split('|');
-                successEventArgs.Track1Data = tracks.Count() >= 0 ? tracks[0] : "";
-                successEventArgs.Track2Data = tracks.Count() >= 2 ? tracks[1] : "";
-                successEventArgs.Track3Data = tracks.Count() >= 3 ? tracks[2] : "";
-                OnCardDataObtained(successEventArgs);
+                var tcount = tracks.Count();
+                if (tcount >= 1)
+                {
+                    successEventArgs.Track1Data = tracks[0];
+                    if(tcount >= 2)
+                    {
+                            successEventArgs.Track2Data = tracks[1];
+                            if (tcount >= 3)
+                            {
+                                successEventArgs.Track3Data = tracks[2];
+                            }
+                            else
+                            {
+                                HandleException(DeviceErrorType.Track3ReadError);
+                            }
+                    }
+                    else
+                    {
+                        HandleException(DeviceErrorType.Track2ReadError);
+                    }
+                }
+                else
+                {
+                    HandleException(DeviceErrorType.Track1ReadError);
+                }
+                 OnCardDataObtained(successEventArgs);
                 return;
             }
             OnCardReadFailure(failEventArgs);
